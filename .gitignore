@@ -1,0 +1,35 @@
+# --- IDE ---
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# --- Android ---
+**/build/
+**/.gradle/
+**/local.properties
+**/GeneratedPhoneActivity.java
+**/*.apk
+**/*.aar
+**/*.jar
+
+# --- Python ---
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/*.pyd
+**/venv/
+**/.venv/
+**/env/
+**/.env
+**/requirements.txt.bak
+
+# --- System/Log ---
+.DS_Store
+Thumbs.db
+*.log
+
+# --- Web Backend Secrets (already in web/.gitignore but safe to have here) ---
+opt/ambulance1/ambulance/web/.env
+opt/ambulance1/ambulance/web/gmail_config.json
+opt/ambulance1/ambulance/web/*.db

@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>ResQG Ambulance Dashboard</title>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css"/>
+<style>
+
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:'Segoe UI',sans-serif;
+}
+
+/* BACKGROUND */
+
+body{
+background:linear-gradient(135deg,#5f7cff,#7f6bff);
+height:100vh;
+display:flex;
+justify-content:center;
+align-items:center;
+overflow:hidden;
+}
+
+/* LOGIN PAGE */
+
+#login-screen{
+width:950px;
+height:520px;
+display:flex;
+border-radius:20px;
+overflow:hidden;
+box-shadow:0 30px 60px rgba(0,0,0,0.25);
+background:white;
+}
+
+/* LEFT SIDE */
+
+.login-left{
+flex:1;
+background:linear-gradient(140deg,#5f7cff,#4c5cff);
+display:flex;
+flex-direction:column;
+justify-content:center;
+align-items:center;
+color:white;
+text-align:center;
+padding:40px;
+}
+
+.login-left h1{
+font-size:48px;
+margin-top:10px;
+}
+
+.login-left p{
+opacity:0.9;
+margin-top:10px;
+}
+
+.login-icon{
+font-size:70px;
+animation:float 3s ease-in-out infinite;
+}
+
+@keyframes float{
+0%{transform:translateY(0px)}
+50%{transform:translateY(-8px)}
+100%{transform:translateY(0px)}
+}
+
+/* RIGHT SIDE */
+
+.login-right{
+flex:1;
+display:flex;
+flex-direction:column;
+justify-content:center;
+padding:60px;
+background:#fafbff;
+}
+
+.login-right h2{
+margin-bottom:25px;
+color:#333;
+font-size:28px;
+}
+
+/* INPUT */
+
+.form-group{
+margin-bottom:18px;
+}
+
+.form-group input{
+width:100%;
+padding:14px;
+border-radius:10px;
+border:1px solid #ddd;
+font-size:14px;
+transition:0.2s;
+}
+
+.form-group input:focus{
+outline:none;
+border-color:#5f7cff;
+box-shadow:0 0 0 3px rgba(95,124,255,0.15);
+}
+
+/* BUTTON */
+
+.login-btn{
+width:100%;
+padding:14px;
+border:none;
+border-radius:10px;
+background:linear-gradient(120deg,#5f7cff,#6f63ff);
+color:white;
+font-size:16px;
+font-weight:600;
+cursor:pointer;
+transition:0.2s;
+}
+
+.login-btn:hover{
+transform:translateY(-2px);
+box-shadow:0 10px 20px rgba(95,124,255,0.4);
+}
+
+/* DASHBOARD */
+
+.container{
+width:95%;
+height:92vh;
+background:white;
+border-radius:18px;
+overflow:hidden;
+display:flex;
+flex-direction:column;
+box-shadow:0 25px 40px rgba(0,0,0,0.25);
+}
+
+/* HEADER */
+
+.app-header{
+display:flex;
+justify-content:space-between;
+align-items:center;
+padding:14px 24px;
+border-bottom:1px solid #eee;
+background:#5f7cff;
+color:white;
+}
+
+.driver-info{
+display:flex;
+gap:12px;
+align-items:center;
+}
+
+.logout-btn{
+background:#ff4d4d;
+border:none;
+color:white;
+padding:6px 12px;
+border-radius:6px;
+cursor:pointer;
+}
+
+/* CONTENT */
+
+.app-content{
+display:flex;
+flex:1;
+}
+
+/* SIDEBAR */
+
+.sidebar{
+width:280px;
+background:#f5f6ff;
+padding:18px;
+overflow:auto;
+border-right:1px solid #eee;
+}
+
+.status-card,
+.system-status{
+background:white;
+padding:14px;
+border-radius:10px;
+margin-bottom:15px;
+box-shadow:0 2px 6px rgba(0,0,0,0.08);
+}
+
+.status-header{
+display:flex;
+justify-content:space-between;
+align-items:center;
+margin-bottom:10px;
+}
+
+.status-indicator{
+padding:4px 8px;
+border-radius:14px;
+font-size:12px;
+font-weight:600;
+}
+
+.status-available{
+background:#e8f5e9;
+color:#2e7d32;
+}
+
+.status-busy{
+background:#ffebee;
+color:#c62828;
+}
+
+.status-info p{
+font-size:13px;
+margin-top:6px;
+display:flex;
+justify-content:space-between;
+}
+
+.status-grid{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:10px;
+margin-top:10px;
+}
+
+.status-item{
+background:#eef1ff;
+padding:10px;
+text-align:center;
+border-radius:6px;
+}
+
+.status-count{
+font-size:18px;
+font-weight:bold;
+}
+
+/* MAP */
+
+.map-container{
+flex:1;
+}
+
+#map{
+width:100%;
+height:100%;
+}
+
+/* EMERGENCY POPUP */
+
+#emergency-popup{
+display:none;
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:rgba(0,0,0,0.6);
+justify-content:center;
+align-items:center;
+z-index: 9999;
+}
+
+.hidden {
+    display: none !important;
+}
+
+.popup-content{
+background:white;
+width:350px;
+border-radius:10px;
+overflow:hidden;
+}
+
+.popup-header{
+background:#ff4d4d;
+color:white;
+padding:16px;
+text-align:center;
+}
+
+.popup-body{
+padding:18px;
+}
+
+.popup-actions{
+display:flex;
+gap:10px;
+margin-top:15px;
+}
+
+.accept-btn{
+flex:1;
+background:#2ecc71;
+border:none;
+padding:10px;
+color:white;
+border-radius:6px;
+cursor:pointer;
+}
+
+.decline-btn{
+flex:1;
+background:#ff4d4d;
+border:none;
+padding:10px;
+color:white;
+border-radius:6px;
+cursor:pointer;
+}
+
+.hospital-item{
+    background: #f8f9fa;
+    border: 1px solid #eee;
+    padding: 10px;
+    margin-bottom: 8px;
+    border-radius: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.hospital-info{
+    font-size: 13px;
+}
+
+.select-hospital-btn{
+    background: #5f7cff;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+</style>
+</head>
+
+<body>
+<div id="app-wrapper">
+<!-- LOGIN PAGE -->
+
+<div id="login-screen">
+
+<div class="login-left">
+<div class="login-icon">🚑</div>
+<h1>ResQG</h1>
+<p>Smart Emergency Response System</p>
+</div>
+
+<div class="login-right">
+
+<!-- LOGIN FORM -->
+
+<div id="login-form">
+
+<h2>Driver Login</h2>
+
+<div class="form-group">
+<input type="text" id="username" placeholder="Username">
+</div>
+
+<div class="form-group">
+<input type="password" id="password" placeholder="Password">
+</div>
+
+<button class="login-btn" onclick="login()">Login to Dashboard</button>
+
+<p style="margin-top:15px;text-align:center;font-size:14px">
+Don't have an account?
+<a href="#" onclick="showRegister()">Register here</a>
+</p>
+
+</div>
+
+
+<!-- REGISTER FORM -->
+
+<div id="register-form" style="display:none">
+
+<h2>Driver Registration</h2>
+
+<div class="form-group">
+<input type="text" id="reg_driver_name" placeholder="Driver Name">
+</div>
+
+<div class="form-group">
+<input type="text" id="reg_username" placeholder="Username">
+</div>
+
+<div class="form-group">
+<input type="password" id="reg_password" placeholder="Password">
+</div>
+
+<div class="form-group">
+<input type="text" id="reg_ambulance_no" placeholder="Ambulance Number">
+</div>
+
+<div class="form-group">
+<input type="text" id="reg_phone" placeholder="Phone Number">
+</div>
+
+<button class="login-btn" onclick="registerDriver()">Register Driver</button>
+
+      <p style="margin-top:15px;text-align:center;font-size:14px">
+        Already have an account?
+        <a href="#" onclick="showLogin()">Login here</a>
+      </p>
+      <p style="margin-top:10px;text-align:center;font-size:12px;">
+        <a href="/patient_sim" style="color:#ff4d4d;">[Demo: Trigger SOS as Patient]</a>
+      </p>
+
+</div>
+</div>
+</div>
+
+<!-- DASHBOARD -->
+
+<div id="main-app" class="container" style="display:none">
+
+<div class="app-header">
+
+<h2>🚑 ResQG Control Center</h2>
+
+<div class="driver-info">
+
+<div>
+<div id="driver-name">Driver</div>
+<div id="ambulance-no">AMB</div>
+</div>
+
+<button class="logout-btn" onclick="logout()">Logout</button>
+
+</div>
+</div>
+
+<div class="app-content">
+
+<div class="sidebar">
+
+<div class="status-card">
+
+<div class="status-header">
+<h3>Your Status</h3>
+<div id="status-indicator" class="status-indicator status-available">Available</div>
+</div>
+
+<div class="status-info">
+<p>Driver: <span id="your-name">-</span></p>
+<p>Ambulance: <span id="your-ambulance">-</span></p>
+<p>Status: <span id="your-status">Available</span></p>
+</div>
+
+</div>
+
+<div id="mission-info" class="status-card" style="display:none; margin-top:15px;">
+
+<h3>🚑 Current Mission</h3>
+
+<div class="mission-details">
+
+<p><strong>Patient:</strong> <span id="mission-patient">-</span></p>
+
+<p><strong>Age:</strong> <span id="mission-age">-</span></p>
+
+<p><strong>Mobile:</strong> <span id="mission-mobile">-</span></p>
+
+<p><strong>Emergency:</strong> <span id="mission-emergency">-</span></p>
+
+<p><strong>Distance:</strong> <span id="mission-distance">-</span></p>
+
+</div>
+
+<!-- PATIENT PICKUP BUTTON -->
+
+<div id="pickup-section" style="display:none; margin-top:12px;">
+
+<button
+onclick="patientPickedUp()"
+style="margin-top:8px;width:100%;padding:12px;background:#2ecc71;color:white;border:none;border-radius:6px;cursor:pointer;font-weight:bold;font-size:16px;box-shadow:0 4px 6px rgba(46,204,113,0.3);"
+>
+
+✅ Patient Picked Up
+
+</button>
+
+</div>
+
+<!-- HOSPITAL SEARCH -->
+<div id="hospital-search-section" style="display:none; margin-top:15px;">
+<h4>🏥 Select Destination Hospital</h4>
+<div class="form-group" style="margin-top:8px;">
+<input type="text" id="hospital-search" placeholder="Search Hospital...">
+<button class="login-btn search-hospital-btn" onclick="searchHospitals()" style="margin-top:5px; padding:8px;">Search</button>
+</div>
+<div id="hospital-list" style="max-height: 200px; overflow-y: auto; margin-top:10px;">
+<!-- Hospital items will be added here -->
+</div>
+</div>
+
+</div>
+
+
+</div>
+
+<div class="map-container">
+<div id="map"></div>
+</div>
+
+</div>
+
+</div>
+
+<!-- EMERGENCY POPUP -->
+
+<div id="emergency-popup">
+
+<div class="popup-content">
+
+<div class="popup-header">
+<h2>🚨 Emergency Alert</h2>
+<div id="emergency-timer">15s</div>
+</div>
+
+<div class="popup-body">
+
+<p><b>Patient:</b> <span id="popup-name"></span></p>
+<p><b>Age:</b> <span id="popup-age"></span></p>
+<p><b>Mobile:</b> <span id="popup-mobile"></span></p>
+<p><b>Emergency:</b> <span id="popup-emergency"></span></p>
+<p><b>Location:</b> <span id="popup-location"></span></p>
+
+<div class="popup-actions">
+
+<button class="accept-btn" onclick="acceptEmergency()">Accept</button>
+<button class="decline-btn" onclick="declineEmergency()">Decline</button>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
+<script src="/static/js/app.js"></script>
+<script>
+
+function showRegister(){
+
+document.getElementById("login-form").style.display="none";
+document.getElementById("register-form").style.display="block";
+
+}
+
+function showLogin(){
+
+document.getElementById("register-form").style.display="none";
+document.getElementById("login-form").style.display="block";
+
+}
+
+function registerDriver(){
+
+fetch("/register_driver",{
+
+method:"POST",
+
+headers:{
+"Content-Type":"application/json"
+},
+
+body:JSON.stringify({
+
+driver_name:document.getElementById("reg_driver_name").value,
+
+username:document.getElementById("reg_username").value,
+
+password:document.getElementById("reg_password").value,
+
+ambulance_no:document.getElementById("reg_ambulance_no").value,
+
+phone:document.getElementById("reg_phone").value
+
+})
+
+})
+
+.then(res=>res.json())
+
+.then(data=>{
+
+alert(data.message)
+
+if(data.status=="success"){
+showLogin()
+}
+
+})
+
+}
+
+</script>
+</div>
+</body>
+</html>

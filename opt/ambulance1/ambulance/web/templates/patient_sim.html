@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patient Emergency SOS - ResQG</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #ff416c, #ff4b2b);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0;
+            color: white;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 24px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+            text-align: center;
+            width: 400px;
+            color: #333;
+        }
+        h1 { color: #d32f2f; margin-bottom: 8px; font-size: 32px; }
+        p { color: #666; margin-bottom: 24px; }
+        .form-group { text-align: left; margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; color: #444; }
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #eee;
+            border-radius: 10px;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+        input:focus { border-color: #ff4b2b; outline: none; }
+        .sos-btn {
+            background: radial-gradient(circle, #ff4b2b, #d32f2f);
+            color: white;
+            border: none;
+            width: 180px;
+            height: 180px;
+            border-radius: 50%;
+            font-size: 32px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 10px 25px rgba(211, 47, 47, 0.4);
+            transition: 0.3s;
+            margin-top: 20px;
+            animation: pulse 2s infinite;
+        }
+        .sos-btn:hover { transform: scale(1.05); }
+        .sos-btn:active { transform: scale(0.95); }
+        
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(211, 47, 47, 0.7); }
+            70% { box-shadow: 0 0 0 20px rgba(211, 47, 47, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(211, 47, 47, 0); }
+        }
+
+        #status {
+            margin-top: 20px;
+            font-weight: bold;
+            padding: 10px;
+            border-radius: 8px;
+            display: none;
+        }
+        .status-success { background: #e8f5e9; color: #2e7d32; display: block !important; }
+        .status-error { background: #ffebee; color: #c62828; display: block !important; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚨 SOS Emergency</h1>
+        <p>Press the button for immediate help</p>
+        
+        <div class="form-group">
+            <label>Full Name</label>
+            <input type="text" id="name" value="Patient Demo">
+        </div>
+        <div class="form-group">
+            <label>Age</label>
+            <input type="number" id="age" value="25">
+        </div>
+        <div class="form-group">
+            <label>Phone Number</label>
+            <input type="text" id="phone" value="9876543210">
+        </div>
+
+        <button class="sos-btn" id="sos-btn" onclick="sendSOS()">SOS</button>
+        
+        <div id="status"></div>
+    </div>
+
+    <script>
+        let userLat = 13.0312; // Default to Bangalore center
+        let userLon = 77.5627;
+
+        // Get actual location if possible
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition((pos) => {
+                userLat = pos.coords.latitude;
+                userLon = pos.coords.longitude;
+            });
+        }
+
+        function sendSOS() {
+            const btn = document.getElementById('sos-btn');
+            const status = document.getElementById('status');
+            
+            btn.disabled = true;
+            btn.innerText = "WAIT...";
+            status.className = "";
+            status.innerText = "Requesting ambulance...";
+
+            const payload = {
+                name: document.getElementById('name').value,
+                age: document.getElementById('age').value,
+                phone: document.getElementById('phone').value,
+                lat: userLat,
+                lon: userLon
+            };
+
+            fetch('/api/request_ambulance', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    status.className = "status-success";
+                    status.innerText = "✅ SOS SENT! Emergency ID: " + data.emergency_id;
+                    btn.innerText = "SENT";
+                } else {
+                    status.className = "status-error";
+                    status.innerText = "❌ FAILED: " + (data.message || "Unknown error");
+                    btn.disabled = false;
+                    btn.innerText = "SOS";
+                }
+            })
+            .catch(err => {
+                status.className = "status-error";
+                status.innerText = "❌ Network Error: Could not reach server.";
+                btn.disabled = false;
+                btn.innerText = "SOS";
+            });
+        }
+    </script>
+</body>
+</html>

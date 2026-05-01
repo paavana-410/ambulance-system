@@ -1,0 +1,109 @@
+name: ResQGo CI - SonarCloud Analysis
+
+on:
+  push:
+    branches: [ main, master, dev ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  sonarcloud:
+    name: SonarCloud Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout code
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # Full history needed for blame/new-code detection
+
+      # 2. Set up Python
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      # 3. Install dependencies
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r opt/ambulance1/ambulance/web/requirements.txt
+          pip install pytest pytest-cov
+
+      # 4. Run tests with coverage (creates coverage.xml for Sonar)
+      - name: Run tests and generate coverage
+        env:
+          SECRET_KEY: test_secret_key
+          DB_HOST: localhost
+          DB_PORT: 3306
+          DB_USER: root
+          DB_PASSWORD: ""
+          DB_NAME: resqgo_test
+          GMAIL_USER: test@test.com
+          GMAIL_APP_PASSWORD: testpassword
+        run: |
+          cd opt/ambulance1/ambulance/web
+          # Run tests if they exist, else just check syntax
+          if [ -f "tests/test_app.py" ]; then
+            pytest tests/ --cov=. --cov-report=xml --cov-report=term-missing
+          else
+            echo "No tests yet - running syntax check only"
+            python -m py_compile app1.py db_helper.py
+            echo "Syntax OK"
+          fi
+        continue-on-error: true
+
+      # 5. SonarCloud Scan
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}   # auto-provided by GitHub
+          SONAR_TOKEN:  ${{ secrets.SONAR_TOKEN }}    # add this in GitHub repo secrets
+
+  python-lint:
+    name: Python Linting (flake8)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install flake8
+        run: pip install flake8
+
+      - name: Lint Python files
+        run: |
+          flake8 opt/ambulance1/ambulance/web/app1.py \
+                 opt/ambulance1/ambulance/web/db_helper.py \
+                 --max-line-length=120 \
+                 --ignore=E501,W503 \
+                 --count --statistics
+        continue-on-error: true   # Don't block PRs during Phase 1 cleanup
+
+  security-check:
+    name: Security Scan (bandit)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install bandit
+        run: pip install bandit
+
+      - name: Run Bandit security scan
+        run: |
+          bandit -r opt/ambulance1/ambulance/web/app1.py \
+                    opt/ambulance1/ambulance/web/db_helper.py \
+                 -ll -ii \
+                 --exclude "**/venv/**,**/migrations/**"
+        continue-on-error: true

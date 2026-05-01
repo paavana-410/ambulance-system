@@ -1,0 +1,30 @@
+# .gitignore for ResQGo Web Server
+# !! NEVER commit secrets or compiled files !!
+
+# --- Secrets ---
+.env
+gmail_config.json
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.pyo
+venv/
+.venv/
+*.egg-info/
+dist/
+build/
+
+# --- Database files (local SQLite) ---
+*.db
+*.sqlite3
+
+# --- IDE ---
+.idea/
+.vscode/
+*.suo
+*.user
+
+# --- OS ---
+.DS_Store
+Thumbs.db

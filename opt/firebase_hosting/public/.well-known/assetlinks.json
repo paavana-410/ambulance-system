@@ -1,0 +1,10 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.smartambulance.patient",
+    "sha256_cert_fingerprints": [
+      "B4:C8:D0:72:02:DD:BE:32:9C:EF:DD:02:0B:14:90:70:2E:20:B6:28:54:53:95:87:CA:7C:65:DA:66:7B:6B:BA"
+    ]
+  }
+}]
