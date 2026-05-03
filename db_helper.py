@@ -37,6 +37,7 @@ class CursorWrapper:
         query = query.replace('CURDATE()', "date('now', 'localtime')")
         query = query.replace('DATE(created_at)', "date(created_at)")
         query = query.replace("NOW() - INTERVAL 1 HOUR", "datetime('now', '-1 hour')")
+        query = query.replace("NOW()", "datetime('now', 'localtime')")
         
         # Log query for debugging
         # print(f"[SQL] {query} | Params: {params}")
