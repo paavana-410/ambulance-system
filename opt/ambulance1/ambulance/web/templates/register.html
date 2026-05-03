@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<title>Driver Registration</title>
+
+<style>
+
+body{
+background:linear-gradient(120deg,#5f7cff,#7f6bff);
+font-family:Segoe UI;
+display:flex;
+justify-content:center;
+align-items:center;
+height:100vh;
+}
+
+.container{
+width:420px;
+background:white;
+padding:40px;
+border-radius:12px;
+box-shadow:0 20px 40px rgba(0,0,0,0.2);
+}
+
+h2{
+text-align:center;
+margin-bottom:20px;
+}
+
+input{
+width:100%;
+padding:12px;
+margin-bottom:15px;
+border-radius:6px;
+border:1px solid #ccc;
+}
+
+button{
+width:100%;
+padding:12px;
+background:#5f7cff;
+border:none;
+color:white;
+font-size:16px;
+border-radius:6px;
+cursor:pointer;
+}
+
+button:hover{
+background:#4c5cff;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<h2>🚑 Driver Registration</h2>
+
+<input type="text" id="driver_name" placeholder="Driver Name">
+
+<input type="text" id="username" placeholder="Username">
+
+<input type="password" id="password" placeholder="Password">
+
+<input type="text" id="ambulance_no" placeholder="Ambulance Number">
+
+<input type="text" id="phone" placeholder="Phone Number">
+
+<button onclick="register()">Register Driver</button>
+
+</div>
+
+<script>
+
+function register(){
+
+fetch('/register_driver',{
+
+method:'POST',
+
+headers:{
+'Content-Type':'application/json'
+},
+
+body:JSON.stringify({
+
+driver_name:document.getElementById('driver_name').value,
+
+username:document.getElementById('username').value,
+
+password:document.getElementById('password').value,
+
+ambulance_no:document.getElementById('ambulance_no').value,
+
+phone:document.getElementById('phone').value
+
+})
+
+})
+
+.then(res=>res.json())
+
+.then(data=>{
+
+alert(data.message)
+
+if(data.status=="success"){
+window.location.href="/"
+}
+
+})
+
+}
+
+</script>
+
+</body>
+</html>
