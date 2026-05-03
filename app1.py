@@ -25,7 +25,7 @@ from flask_socketio import SocketIO, emit
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 
-from db_helper import get_db, init_db
+from db_helper import get_db, init_db, create_payment, save_mandate, get_overdue_payments
 
 # ?? Load environment ??????????????????????????????????????????????????????????
 load_dotenv()
@@ -645,7 +645,10 @@ def complete_mission():
         )
         conn.commit()
 
-        # 4. Push REAL-TIME Update to Patient
+        # 4. Generate AutoPay Invoice (due in 3 days)
+        create_payment(mission["emergency_id"], round(total_fare, 2), due_days=3)
+
+        # 5. Push REAL-TIME Update to Patient
         socketio.emit("mission_finished", {
             "emergency_id": mission["emergency_id"],
             "distance": f"{dist:.2f} km",
@@ -727,6 +730,66 @@ def activate():
 @app.route("/api/routing_distance", methods=["POST"])
 def routing_dist():
     return jsonify({"status": "ok"})
+
+
+# ?????????????????????????????????????????????????????????????????????????????
+# AUTOPAY & PHONEPE BUSINESS SIMULATION
+# ?????????????????????????????????????????????????????????????????????????????
+
+@app.route("/api/autopay/register_mandate", methods=["POST"])
+def register_mandate():
+    """Simulates the PhonePe Business Callback for Mandate Approval."""
+    data = request.get_json(silent=True) or {}
+    user_id = data.get("user_id") # For demo, this could be the patient phone or a unique ID
+    token = data.get("mandate_token", f"MNDT_{random.randint(10000, 99999)}")
+    limit = data.get("max_limit", 2000.0)
+    
+    if not user_id:
+        return jsonify({"status": "error", "message": "user_id required"}), 400
+        
+    if save_mandate(user_id, token, limit):
+        return jsonify({"status": "success", "message": "UPI AutoPay Mandate Activated", "token": token})
+    return jsonify({"status": "error", "message": "Failed to save mandate"}), 500
+
+@app.route("/api/autopay/process_overdue", methods=["POST"])
+def process_overdue():
+    """
+    Simulates the 3-day Cron Job.
+    Finds all PENDING payments past their due date and executes AutoPay.
+    """
+    overdue = get_overdue_payments()
+    results = []
+    
+    conn = get_db()
+    cur = conn.cursor()
+    
+    for p in overdue:
+        # 1. Check if user has an active mandate
+        cur_dict = conn.cursor(dictionary=True)
+        cur_dict.execute("SELECT mandate_token FROM upi_mandates WHERE user_id=%s AND status='ACTIVE' LIMIT 1", (p['user_phone'],))
+        mandate = cur_dict.fetchone()
+        
+        if mandate:
+            # 2. Simulate UPI AutoPay API call to PhonePe
+            tx_id = f"TXN_{random.randint(100000, 999999)}"
+            
+            # 3. Update payment as SUCCESS
+            cur.execute(
+                "UPDATE payments SET status='SUCCESS', payment_mode='AUTOPAY', transaction_id=%s "
+                "WHERE id=%s", (tx_id, p['id'])
+            )
+            results.append({"payment_id": p['id'], "status": "DEBITED", "tx_id": tx_id})
+        else:
+            results.append({"payment_id": p['id'], "status": "NO_MANDATE"})
+            
+    conn.commit()
+    conn.close()
+    
+    return jsonify({
+        "status": "success",
+        "processed_count": len(results),
+        "details": results
+    })
 
 
 # ?????????????????????????????????????????????????????????????????????????????

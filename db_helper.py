@@ -147,9 +147,94 @@ def init_db():
             )
         """)
 
+        # ── UPI Mandates ─────────────────────────────────────────────────────
+        cur.execute(f"""
+            CREATE TABLE IF NOT EXISTS upi_mandates (
+                id            INTEGER PRIMARY KEY {auto_inc},
+                user_id       INT NOT NULL,
+                mandate_token VARCHAR(255) NOT NULL,
+                status        VARCHAR(50) DEFAULT 'ACTIVE',
+                max_limit     DECIMAL(10,2),
+                created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
+        # ── Payments ──────────────────────────────────────────────────────────
+        cur.execute(f"""
+            CREATE TABLE IF NOT EXISTS payments (
+                id            INTEGER PRIMARY KEY {auto_inc},
+                emergency_id  INT NOT NULL,
+                amount        DECIMAL(10,2) NOT NULL,
+                status        VARCHAR(50) DEFAULT 'PENDING',
+                due_date      DATETIME NOT NULL,
+                payment_mode  VARCHAR(50) DEFAULT 'QR_MANUAL',
+                transaction_id VARCHAR(100),
+                updated_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
         conn.commit()
         print("[OK] Database tables initialised successfully.")
         cur.close()
         conn.close()
     except Exception as exc:
         print(f"[WARN] Failed to initialise tables: {exc}")
+
+# ── AutoPay Helper Methods ────────────────────────────────────────────────────
+
+def create_payment(emergency_id, amount, due_days=3):
+    """Creates a pending payment record with a 3-day due date."""
+    try:
+        conn = get_db()
+        cur = conn.cursor()
+        from datetime import datetime, timedelta
+        due_date = datetime.now() + timedelta(days=due_days)
+        
+        cur.execute("""
+            INSERT INTO payments (emergency_id, amount, status, due_date)
+            VALUES (%s, %s, %s, %s)
+        """, (emergency_id, amount, 'PENDING', due_date))
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        return True
+    except Exception as e:
+        print(f"Error creating payment: {e}")
+        return False
+
+def save_mandate(user_id, token, max_limit=2000.0):
+    """Saves a UPI mandate token for future auto-debits."""
+    try:
+        conn = get_db()
+        cur = conn.cursor()
+        cur.execute("""
+            INSERT INTO upi_mandates (user_id, mandate_token, max_limit)
+            VALUES (%s, %s, %s)
+        """, (user_id, token, max_limit))
+        conn.commit()
+        cur.close()
+        conn.close()
+        return True
+    except Exception as e:
+        print(f"Error saving mandate: {e}")
+        return False
+
+def get_overdue_payments():
+    """Returns all PENDING payments that are past their due date."""
+    try:
+        conn = get_db()
+        cur = conn.cursor(dictionary=True)
+        cur.execute("""
+            SELECT p.*, e.patient_mobile as user_phone
+            FROM payments p
+            JOIN emergencies e ON p.emergency_id = e.emergency_id
+            WHERE p.status = 'PENDING' AND p.due_date < NOW()
+        """)
+        rows = cur.fetchall()
+        cur.close()
+        conn.close()
+        return rows
+    except Exception as e:
+        print(f"Error fetching overdue payments: {e}")
+        return []
