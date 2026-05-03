@@ -348,6 +348,54 @@ cursor:pointer;
     font-size: 12px;
 }
 
+
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.7);
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+}
+
+.modal-content {
+    background: white;
+    padding: 30px;
+    border-radius: 15px;
+    text-align: center;
+    width: 400px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+}
+
+.fare-amount {
+    font-size: 36px;
+    font-weight: 800;
+    color: #2ecc71;
+    margin: 15px 0;
+}
+
+.qr-code-img {
+    width: 250px;
+    height: 250px;
+    margin: 20px auto;
+    border: 1px solid #eee;
+    padding: 10px;
+}
+
+.close-modal-btn {
+    background: #5f7cff;
+    color: white;
+    border: none;
+    padding: 12px 30px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    margin-top: 15px;
+}
 </style>
 </head>
 
@@ -412,7 +460,7 @@ Don't have an account?
 </div>
 
 <div class="form-group">
-<input type="text" id="reg_phone" placeholder="Phone Number">
+<input type="text" id="reg_phone" placeholder="Phone Number (Mandatory)">
 </div>
 
 <button class="login-btn" onclick="registerDriver()">Register Driver</button>
@@ -556,6 +604,27 @@ style="margin-top:8px;width:100%;padding:12px;background:#2ecc71;color:white;bor
 
 </div>
 
+</div>
+
+
+<!-- MISSION COMPLETE MODAL -->
+<div id="mission-complete-modal" class="modal">
+    <div class="modal-content">
+        <h2 style="color: #333;">🏁 Mission Completed!</h2>
+        <p style="color: #666; margin-top: 10px;">The patient has been dropped at the hospital.</p>
+        
+        <div class="fare-section">
+            <p style="margin-top: 20px; font-weight: 600;">Total Fare Amount:</p>
+            <div id="final-fare" class="fare-amount">₹0.00</div>
+        </div>
+
+        <div class="qr-section">
+            <p style="font-size: 14px; color: #888;">Patient can scan this QR code to pay</p>
+            <img src="/static/img/qr.jpg" alt="Payment QR Code" class="qr-code-img">
+        </div>
+
+        <button class="close-modal-btn" onclick="closeMissionModal()">Back to Dashboard</button>
+    </div>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>

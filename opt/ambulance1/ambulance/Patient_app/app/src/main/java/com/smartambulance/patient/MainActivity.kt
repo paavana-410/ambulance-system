@@ -785,6 +785,7 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
     var eta by remember { mutableStateOf(t("Wait...", "प्रतीक्षा करें...", "ಕಾಯಿರಿ...")) }
     var destName by remember { mutableStateOf<String?>(null) }
     var hospitals by remember { mutableStateOf<List<Hospital>>(emptyList()) }
+    var fare by remember { mutableStateOf(0.0) }
 
     var lastStatus by remember { mutableStateOf("") }
     
@@ -797,6 +798,7 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
                 ambulanceNo = status.ambulance_no ?: "-"
                 destName = status.dest_name
                 driverPhone = status.driver_phone
+                fare = status.fare ?: 0.0
 
                 if (emergencyState != lastStatus) {
                    Log.d("STATUS_CHANGE", "New status: $emergencyState")
@@ -817,9 +819,10 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
                 }
             } catch (e: Exception) {}
             if (emergencyState == "completed") {
-                kotlinx.coroutines.delay(3000)
-                navController.popBackStack()
-                return@LaunchedEffect
+                // Don't pop immediately, wait for user to see fare and pay
+                // kotlinx.coroutines.delay(3000)
+                // navController.popBackStack()
+                // return@LaunchedEffect
             }
             kotlinx.coroutines.delay(3000)
         }
@@ -899,6 +902,40 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
             Column(modifier = Modifier.padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 if(emergencyState == "completed") {
                     Text("✅ Ride Completed", fontWeight = FontWeight.ExtraBold, fontSize = 24.sp, color = Color(0xFF155724))
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text("Total Fare: ₹$fare", fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, color = DeepPurple)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text("Please complete the payment to end session", fontSize = 14.sp, color = Color.Gray)
+                    
+                    Spacer(modifier = Modifier.height(24.dp))
+                    Button(
+                        onClick = {
+                            val upiUri = "upi://pay?pa=resqgo@upi&pn=ResQGo&am=$fare&cu=INR"
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(upiUri))
+                            
+                            // Try to target PhonePe specifically as requested
+                            intent.setPackage("com.phonepe.app")
+                            
+                            try {
+                                activity.startActivity(intent)
+                            } catch (e: Exception) {
+                                // Fallback to any UPI app if PhonePe is not installed
+                                val fallbackIntent = Intent(Intent.ACTION_VIEW, Uri.parse(upiUri))
+                                val chooser = Intent.createChooser(fallbackIntent, "Pay with UPI")
+                                activity.startActivity(chooser)
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth().height(60.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF5f7cff)),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text("PAY NOW", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 20.sp)
+                    }
+                    
+                    Spacer(modifier = Modifier.height(12.dp))
+                    TextButton(onClick = { navController.popBackStack() }) {
+                        Text("Close", color = Color.Gray)
+                    }
                 } else {
                     val msg = when {
                         emergencyState == "pending" -> t("Searching for ambulance...", "एम्बुलेंस खोज रहा है...", "ಆಂಬ್ಯುಲೆನ್ಸ್ ಹುಡುಕಲಾಗುತ್ತಿದೆ...")

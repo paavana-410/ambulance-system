@@ -938,17 +938,21 @@ function completeMission() {
         console.log("📨 Complete mission response:", data);
         
         if (data.status === 'completed') {
+            // Show completion modal
+            document.getElementById('final-fare').textContent = `₹${data.fare}`;
+            document.getElementById('mission-complete-modal').style.display = 'flex';
+
             // Reset everything
             document.getElementById('mission-info').style.display = 'none';
             document.getElementById('hospital-search-section').style.display = 'none';
-            document.getElementById('status-indicator').textContent = 'Dropped at hospital';
+            document.getElementById('status-indicator').textContent = 'Mission Completed';
             document.getElementById('status-indicator').className = 'status-indicator status-available';
-            document.getElementById('your-status').textContent = 'Dropped at hospital';
+            document.getElementById('your-status').textContent = 'Mission Completed';
             
             setTimeout(() => {
                 document.getElementById('status-indicator').textContent = 'Available';
                 document.getElementById('your-status').textContent = 'Available';
-            }, 5000);
+            }, 8000);
             
             // Clear markers
             if (patientMarker) {

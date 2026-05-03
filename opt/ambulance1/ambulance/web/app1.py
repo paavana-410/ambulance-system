@@ -163,8 +163,8 @@ def register_driver():
     phone        = (data.get("phone") or "").strip()
 
     # Basic server-side validation
-    if not all([driver_name, username, password, ambulance_no]):
-        return jsonify({"status": "error", "message": "All fields are required"}), 400
+    if not all([driver_name, username, password, ambulance_no, phone]):
+        return jsonify({"status": "error", "message": "All fields are required including phone number"}), 400
     if len(password) < 6:
         return jsonify({"status": "error", "message": "Password must be at least 6 characters"}), 400
 
@@ -327,6 +327,8 @@ def get_status():
         "dest_name":       row["dest_name"],
         "lat":             row["lat"],
         "lon":             row["lon"],
+        "fare":            row.get("fare", 0.0),
+        "ride_distance":   row.get("ride_distance", 0.0)
     })
 
 
@@ -606,26 +608,59 @@ def patient_picked_up():
 def complete_mission():
     driver_id = session.get("driver_id")
     data = request.get_json(silent=True) or {}
+    eid = data.get("emergency_id")
 
     conn = get_db()
     try:
-        cur = conn.cursor()
+        cur = conn.cursor(dictionary=True)
+        # 1. Fetch mission details to calculate fare
         if driver_id:
             cur.execute(
-                "UPDATE emergencies SET status='completed' "
-                "WHERE driver_id=%s AND status IN ('accepted','active')",
+                "SELECT * FROM emergencies "
+                "WHERE driver_id=%s AND status IN ('accepted','active') LIMIT 1",
                 (driver_id,),
             )
-        elif data.get("emergency_id"):
-            cur.execute(
-                "UPDATE emergencies SET status='completed' WHERE emergency_id=%s",
-                (data["emergency_id"],),
-            )
+        else:
+            cur.execute("SELECT * FROM emergencies WHERE emergency_id=%s", (eid,))
+        
+        mission = cur.fetchone()
+        if not mission:
+            return jsonify({"status": "error", "message": "No active mission found"}), 404
+
+        # 2. Calculate Distance and Fare
+        # Distance between Pickup (lat/lon) and Destination (dest_lat/dest_lon)
+        dist = 0.0
+        if mission["lat"] and mission["dest_lat"]:
+            dist = calculate_haversine(mission["lat"], mission["lon"], mission["dest_lat"], mission["dest_lon"])
+        
+        base_fare = 100.0
+        rate_per_km = 15.0
+        total_fare = base_fare + (dist * rate_per_km)
+
+        # 3. Update Database
+        cur.execute(
+            "UPDATE emergencies SET status='completed', ride_distance=%s, fare=%s "
+            "WHERE emergency_id=%s",
+            (round(dist, 2), round(total_fare, 2), mission["emergency_id"]),
+        )
         conn.commit()
+
+        # 4. Push REAL-TIME Update to Patient
+        socketio.emit("mission_finished", {
+            "emergency_id": mission["emergency_id"],
+            "distance": f"{dist:.2f} km",
+            "fare": round(total_fare, 2),
+            "patient_name": mission["patient_name"]
+        })
+
     finally:
         conn.close()
 
-    return jsonify({"status": "completed"})
+    return jsonify({
+        "status": "completed", 
+        "fare": round(total_fare, 2), 
+        "distance": f"{dist:.2f} km"
+    })
 
 
 @app.route("/api/get_current_mission")
@@ -712,23 +747,24 @@ def on_disconnect():
 # STARTUP
 # ?????????????????????????????????????????????????????????????????????????????
 
-if __name__ == "__main__":
+# Initialise Database and Cleanup
+try:
     init_db()
+    conn = get_db()
+    cur  = conn.cursor()
+    cur.execute(
+        "UPDATE emergencies SET status='expired' "
+        "WHERE status IN ('pending','accepted','active') "
+        "AND created_at < NOW() - INTERVAL 1 HOUR"
+    )
+    conn.commit()
+    conn.close()
+    print("? Database initialised and stale missions cleaned up.")
+except Exception as exc:
+    print(f"??  Startup initialization failed: {exc}")
 
-    # On startup, expire stale missions from previous sessions
-    try:
-        conn = get_db()
-        cur  = conn.cursor()
-        cur.execute(
-            "UPDATE emergencies SET status='expired' "
-            "WHERE status IN ('pending','accepted','active') "
-            "AND created_at < NOW() - INTERVAL 1 HOUR"
-        )
-        conn.commit()
-        conn.close()
-        print("? Stale missions cleaned up.")
-    except Exception as exc:
-        print(f"??  Startup cleanup failed: {exc}")
-
-    print("? ResQGo Server starting on http://0.0.0.0:3000 ...")
-    socketio.run(app, host="0.0.0.0", port=3000, debug=True, allow_unsafe_werkzeug=True)
+if __name__ == "__main__":
+    # Use PORT from environment (Railway) or default to 3000
+    port = int(os.environ.get("PORT", 3000))
+    print(f"🚀 ResQGo Server starting on port {port}...")
+    socketio.run(app, host="0.0.0.0", port=port, debug=False)
