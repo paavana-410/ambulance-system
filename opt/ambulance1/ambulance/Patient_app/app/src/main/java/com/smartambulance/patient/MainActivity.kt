@@ -53,6 +53,9 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.launch
 
+val DeepPurple = Color(0xFF6200EE)
+val ResQGRed = Color(0xFFFF4D4D)
+
 class MainActivity : ComponentActivity() {
 
     private val linkFlow = MutableSharedFlow<String>(extraBufferCapacity = 1)
