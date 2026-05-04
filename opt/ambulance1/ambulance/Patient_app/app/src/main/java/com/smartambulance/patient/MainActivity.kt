@@ -381,9 +381,6 @@ fun LanguageScreen(navController: NavController) {
         TextButton(onClick = { navController.navigate("login") }) {
             Text("Already an existing user? Login here", color = Color.White)
         }
-        TextButton(onClick = { navController.navigate("role_selection") { popUpTo("role_selection") { inclusive = true } } }) {
-            Text("Back to Role Selection", color = Color.Gray)
-        }
     }
 }
 
@@ -1099,9 +1096,6 @@ fun DriverLoginScreen(navController: NavController) {
         Spacer(modifier = Modifier.height(24.dp))
         TextButton(onClick = { navController.navigate("driver_register") }) {
             Text("Register New Driver", color = Color.White)
-        }
-        TextButton(onClick = { navController.navigate("role_selection") { popUpTo("driver_login") { inclusive = true } } }) {
-            Text("Back to Role Selection", color = Color.Gray)
         }
     }
 }
