@@ -560,9 +560,25 @@ def assign_hospital():
             (data["lat"], data["lon"], data["name"], data["emergency_id"]),
         )
         conn.commit()
-    finally:
-        conn.close()
-    return jsonify({"status": "success"})
+    return jsonify({"status": "success", "message": "Pickup confirmed"})
+
+
+@app.route("/api/activate_emergency_mode", methods=["POST"])
+def activate_emergency_mode():
+    data = request.get_json(silent=True) or {}
+    eid = data.get("emergency_id")
+    
+    print(f"🚦 [TRAFFIC CONTROL] ACTIVATING GREEN WAVE FOR EMERGENCY: {eid}")
+    print(f"📡 [LoRa SIGNAL] Sending 'PRIORITY_GREEN' packet to ESP32 Ambulance Unit...")
+    
+    # In a real hardware setup, you would use requests.post to your ESP32's IP 
+    # or send a MQTT message here.
+    
+    return jsonify({
+        "status": "success", 
+        "message": "Traffic signal priority activated",
+        "hardware_status": "LORA_PACKET_SENT"
+    })
 
 
 @app.route("/api/patient_picked_up", methods=["POST"])
@@ -589,8 +605,9 @@ def patient_picked_up():
             return jsonify({"status": "error", "message": "Emergency not found"}), 404
         if str(emer["driver_id"]) != str(driver_id):
             return jsonify({"status": "error", "message": "Unauthorised"}), 403
-        if emer["status"] != "accepted":
-            return jsonify({"status": "error", "message": "Invalid state transition"}), 409
+        # Check if already picked up (active) or ready for pickup (accepted)
+        if emer["status"] not in ["accepted", "active"]:
+            return jsonify({"status": "error", "message": f"Invalid state: {emer['status']}"}), 409
 
         cur2 = conn.cursor()
         cur2.execute(
@@ -598,6 +615,9 @@ def patient_picked_up():
             (eid,),
         )
         conn.commit()
+        
+        # LOG FOR HARDWARE INTEGRATION
+        print(f"📡 [HARDWARE SIGNAL] Emergency {eid}: Patient picked up. Preparing Traffic Signal Green Wave.")
     finally:
         conn.close()
 

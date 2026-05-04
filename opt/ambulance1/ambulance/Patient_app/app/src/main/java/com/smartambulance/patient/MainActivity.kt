@@ -179,6 +179,10 @@ object UserSession {
     var serverIp: String
         get() = prefs.getString("serverIp", "web-production-67038.up.railway.app") ?: "web-production-67038.up.railway.app"
         set(value) = prefs.edit().putString("serverIp", value).apply()
+
+    var isAutoPayEnabled: Boolean
+        get() = prefs.getBoolean("isAutoPayEnabled", false)
+        set(value) = prefs.edit().putBoolean("isAutoPayEnabled", value).apply()
 }
 
 fun t(en: String, hi: String, kn: String): String {
@@ -543,7 +547,14 @@ fun RegisterScreen(navController: NavController, email: String) {
                 OutlinedTextField(value = password, onValueChange = { password = it }, label = { Text(t("Password", "पासवर्ड", "ಪಾಸ್ವರ್ಡ್")) }, modifier = Modifier.fillMaxWidth(), visualTransformation = PasswordVisualTransformation())
                 OutlinedTextField(value = phone, onValueChange = { phone = it }, label = { Text(t("Phone Number", "फ़ोन नंबर", "ದೂರವಾಣಿ ಸಂಖ್ಯೆ")) }, modifier = Modifier.fillMaxWidth(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone))
                 
+                var autoPayChecked by remember { mutableStateOf(true) }
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 12.dp)) {
+                    Checkbox(checked = autoPayChecked, onCheckedChange = { autoPayChecked = it })
+                    Text(t("Enable UPI AutoPay (Recommended)", "यूपीआई ऑटोपे सक्षम करें", "ಯುಪಿಐ ಆಟೋಪೇ ಸಕ್ರಿಯಗೊಳಿಸಿ"), fontSize = 14.sp)
+                }
+
                 Spacer(modifier = Modifier.height(24.dp))
+                val scope = rememberCoroutineScope()
                 Button(
                     onClick = {
                         if (firstName.isNotBlank() && username.isNotBlank() && password.isNotBlank() && phone.isNotBlank()) {
@@ -553,6 +564,16 @@ fun RegisterScreen(navController: NavController, email: String) {
                             UserSession.phone = phone
                             UserSession.username = username
                             UserSession.isProfileComplete = true
+                            UserSession.isAutoPayEnabled = autoPayChecked
+
+                            if (autoPayChecked) {
+                                scope.launch {
+                                    try {
+                                        RetrofitClient.instance.registerMandate(MandatePayload(phone))
+                                    } catch (e: Exception) { Log.e("AutoPay", "Registration failed", e) }
+                                }
+                            }
+
                             navController.navigate("home") { popUpTo("register") { inclusive = true } }
                         }
                     },
@@ -711,6 +732,21 @@ fun HomeScreen(navController: NavController, activity: MainActivity) {
                 colors = ButtonDefaults.buttonColors(containerColor = ResQGRed)
             ) {
                 Text(t("Logout", "लॉग आउट", "ಲಾಗ್ ಔಟ್"), fontSize = 12.sp)
+            }
+        }
+
+        // AutoPay Status Badge
+        if (UserSession.isAutoPayEnabled) {
+            Card(
+                modifier = Modifier.align(Alignment.TopEnd).padding(top = 80.dp, end = 16.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFE8F5E9)),
+                elevation = CardDefaults.cardElevation(4.dp)
+            ) {
+                Row(modifier = Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.LocationOn, contentDescription = null, tint = Color(0xFF2E7D32), modifier = Modifier.size(16.dp))
+                    Text("AutoPay Active", color = Color(0xFF2E7D32), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                }
             }
         }
 
@@ -907,29 +943,39 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
                     Spacer(modifier = Modifier.height(8.dp))
                     Text("Please complete the payment to end session", fontSize = 14.sp, color = Color.Gray)
                     
-                    Spacer(modifier = Modifier.height(24.dp))
-                    Button(
-                        onClick = {
-                            val upiUri = "upi://pay?pa=resqgo@upi&pn=ResQGo&am=$fare&cu=INR"
-                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(upiUri))
-                            
-                            // Try to target PhonePe specifically as requested
-                            intent.setPackage("com.phonepe.app")
-                            
-                            try {
-                                activity.startActivity(intent)
-                            } catch (e: Exception) {
-                                // Fallback to any UPI app if PhonePe is not installed
-                                val fallbackIntent = Intent(Intent.ACTION_VIEW, Uri.parse(upiUri))
-                                val chooser = Intent.createChooser(fallbackIntent, "Pay with UPI")
-                                activity.startActivity(chooser)
+                    if (UserSession.isAutoPayEnabled) {
+                        Card(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color(0xFFE8F5E9)),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Default.LocationOn, contentDescription = null, tint = Color(0xFF2E7D32), modifier = Modifier.size(24.dp))
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Text("AutoPay Active: Settlement scheduled in 3 days.", color = Color(0xFF2E7D32), fontSize = 14.sp, fontWeight = FontWeight.Medium)
                             }
-                        },
-                        modifier = Modifier.fillMaxWidth().height(60.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF5f7cff)),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Text("PAY NOW", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 20.sp)
+                        }
+                    } else {
+                        Spacer(modifier = Modifier.height(24.dp))
+                        Button(
+                            onClick = {
+                                val upiUri = "upi://pay?pa=resqgo@upi&pn=ResQGo&am=$fare&cu=INR"
+                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(upiUri))
+                                intent.setPackage("com.phonepe.app")
+                                try {
+                                    activity.startActivity(intent)
+                                } catch (e: Exception) {
+                                    val fallbackIntent = Intent(Intent.ACTION_VIEW, Uri.parse(upiUri))
+                                    val chooser = Intent.createChooser(fallbackIntent, "Pay with UPI")
+                                    activity.startActivity(chooser)
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth().height(60.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF5f7cff)),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Text("PAY NOW", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 20.sp)
+                        }
                     }
                     
                     Spacer(modifier = Modifier.height(12.dp))

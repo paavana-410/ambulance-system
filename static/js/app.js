@@ -207,12 +207,12 @@ function clearRoute() {
 
 
 function startEmergencyPolling() {
-    // Check for new emergencies every 2 seconds
+    // Check for new emergencies every 5 seconds (Reduced frequency to prevent 429 errors)
     setInterval(() => {
-        if (!currentEmergency) { // Only check if no current emergency
+        if (!currentEmergency) { 
             checkForEmergencies();
         }
-    }, 2000);
+    }, 5000);
 }
 
 function checkForEmergencies() {

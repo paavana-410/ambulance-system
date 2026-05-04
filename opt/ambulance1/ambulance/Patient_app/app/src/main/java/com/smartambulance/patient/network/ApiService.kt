@@ -94,6 +94,18 @@ data class HospitalAssignPayload(
     val emergency_id: String, val lat: Double, val lon: Double, val name: String
 )
 
+data class MandatePayload(
+    val user_id: String,
+    val max_limit: Double = 2000.0,
+    val mandate_token: String? = null
+)
+
+data class MandateResponse(
+    val status: String,
+    val message: String,
+    val token: String?
+)
+
 interface ApiService {
     @POST("/send-email-otp")
     suspend fun sendEmailOtp(@Body payload: Map<String, String>): SimpleResponse
@@ -139,6 +151,9 @@ interface ApiService {
 
     @POST("/api/complete_mission")
     suspend fun completeMission(@Body payload: DriverEmergencyActionPayload): SimpleResponse
+
+    @POST("/api/autopay/register_mandate")
+    suspend fun registerMandate(@Body payload: MandatePayload): MandateResponse
 }
 
 object RetrofitClient {

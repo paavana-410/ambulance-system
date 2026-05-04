@@ -561,6 +561,18 @@ style="margin-top:8px;width:100%;padding:12px;background:#2ecc71;color:white;bor
 </div>
 </div>
 
+    <div id="fintech-dashboard" class="status-card" style="margin-top:15px; border-top: 3px solid #2ecc71;">
+        <h3 style="color: #2ecc71;">💳 Fintech Dashboard</h3>
+        <div class="status-info">
+            <p style="font-size: 12px; color: #666; margin-bottom: 8px;">UPI AutoPay Status</p>
+            <p style="display: flex; justify-content: space-between;">Pending Invoices: <span id="pending-invoices" style="font-weight: bold;">0</span></p>
+            <p style="display: flex; justify-content: space-between;">Overdue (3+ Days): <span id="overdue-payments" style="font-weight: bold; color: #ff4d4d;">0</span></p>
+            
+            <button onclick="simulateAutoPay()" class="login-btn" style="margin-top: 12px; background: #2ecc71; font-size: 13px;">
+                ⚡ Run AutoPay Settlement
+            </button>
+        </div>
+    </div>
 </div>
 
 
@@ -630,6 +642,19 @@ style="margin-top:8px;width:100%;padding:12px;background:#2ecc71;color:white;bor
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
 <script src="/static/js/app.js"></script>
+<script>
+    // Fintech Simulation Logic
+    function simulateAutoPay() {
+        if(confirm("Confirm: Execute UPI AutoPay for all overdue 3-day invoices?")) {
+            fetch("/api/autopay/process_overdue", { method: "POST" })
+            .then(res => res.json())
+            .then(data => {
+                alert(`SUCCESS!\nProcessed: ${data.processed_count} payments.\nCheck console for details.`);
+                console.log(data.details);
+            });
+        }
+    }
+</script>
 <script>
 
 function showRegister(){
