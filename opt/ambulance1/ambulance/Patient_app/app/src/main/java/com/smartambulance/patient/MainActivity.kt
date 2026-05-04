@@ -452,6 +452,23 @@ fun EmailScreen(navController: NavController, viewModel: AuthViewModel) {
                         Text("SEND MAGIC LINK", color = Color.White, fontWeight = FontWeight.Bold)
                     }
                 }
+
+                // DEMO LOGIN BUTTON FOR PRESENTATION
+                Spacer(modifier = Modifier.height(16.dp))
+                OutlinedButton(
+                    onClick = {
+                        UserSession.email = "demo@resqgo.com"
+                        UserSession.role = "patient"
+                        UserSession.isPatientLoggedIn = true
+                        UserSession.isProfileComplete = true
+                        navController.navigate("home") { popUpTo(0) }
+                    },
+                    modifier = Modifier.fillMaxWidth().height(50.dp),
+                    border = android.view.View.generateViewId().let { androidx.compose.foundation.BorderStroke(1.dp, DeepPurple) },
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text("SKIP FOR DEMO (GUEST)", color = DeepPurple, fontWeight = FontWeight.SemiBold)
+                }
             }
         }
     }

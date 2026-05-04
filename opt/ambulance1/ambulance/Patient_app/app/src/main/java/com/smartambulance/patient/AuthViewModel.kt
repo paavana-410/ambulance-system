@@ -66,7 +66,7 @@ class AuthViewModel : ViewModel() {
         otpRequestInFlight = true
 
         val actionCodeSettings = ActionCodeSettings.newBuilder()
-            .setUrl("https://ambulanceapp-7472c.firebaseapp.com/finishSignUp")
+            .setUrl("https://ambulanceapp-7472c.firebaseapp.com/__/auth/action?apiKey=AIzaSyB...") // Using default handler
             .setHandleCodeInApp(true)
             .setAndroidPackageName("com.smartambulance.patient", true, "1")
             .build()
