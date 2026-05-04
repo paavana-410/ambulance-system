@@ -560,7 +560,9 @@ def assign_hospital():
             (data["lat"], data["lon"], data["name"], data["emergency_id"]),
         )
         conn.commit()
-    return jsonify({"status": "success", "message": "Pickup confirmed"})
+    finally:
+        conn.close()
+    return jsonify({"status": "success", "message": "Hospital assigned"})
 
 
 @app.route("/api/activate_emergency_mode", methods=["POST"])
