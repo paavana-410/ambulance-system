@@ -6,8 +6,18 @@
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
     <uses-permission android:name="android.permission.CAMERA"/>
+    <uses-permission android:name="android.permission.VIBRATE"/>
 
     <uses-feature android:name="android.hardware.camera" android:required="false" />
+
+    <!-- Required on Android 11+ to launch PhonePe / UPI apps via Intent -->
+    <queries>
+        <package android:name="com.phonepe.app" />
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="upi" />
+        </intent>
+    </queries>
 
     <application
         android:allowBackup="true"

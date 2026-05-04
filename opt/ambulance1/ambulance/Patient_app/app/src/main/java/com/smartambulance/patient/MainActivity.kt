@@ -139,15 +139,6 @@ object UserSession {
         get() = prefs.getString("role", "") ?: ""
         set(value) = prefs.edit().putString("role", value).apply()
 
-    // Patient
-    var firstName: String
-        get() = prefs.getString("firstName", "") ?: ""
-        set(value) = prefs.edit().putString("firstName", value).apply()
-
-    var lastName: String
-        get() = prefs.getString("lastName", "") ?: ""
-        set(value) = prefs.edit().putString("lastName", value).apply()
-
     // Shared
     var phone: String
         get() = prefs.getString("phone", "") ?: ""
@@ -536,8 +527,6 @@ fun OtpScreen(navController: NavController, email: String, viewModel: AuthViewMo
 
 @Composable
 fun RegisterScreen(navController: NavController, email: String) {
-    var firstName by remember { mutableStateOf("") }
-    var lastName by remember { mutableStateOf("") }
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
@@ -557,8 +546,6 @@ fun RegisterScreen(navController: NavController, email: String) {
             elevation = CardDefaults.cardElevation(8.dp)
         ) {
             Column(modifier = Modifier.padding(24.dp)) {
-                OutlinedTextField(value = firstName, onValueChange = { firstName = it }, label = { Text(t("First Name", "पहला नाम", "ಮೊದಲ ಹೆಸರು")) }, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(value = lastName, onValueChange = { lastName = it }, label = { Text(t("Last Name", "अंतिम नाम", "ಕೊನೆಯ ಹೆಸರು")) }, modifier = Modifier.fillMaxWidth())
                 OutlinedTextField(value = username, onValueChange = { username = it }, label = { Text(t("Username", "उपयोगकर्ता नाम", "ಬಳಕೆದಾರರ ಹೆಸರು")) }, modifier = Modifier.fillMaxWidth())
                 OutlinedTextField(value = password, onValueChange = { password = it }, label = { Text(t("Password", "पासवर्ड", "ಪಾಸ್ವರ್ಡ್")) }, modifier = Modifier.fillMaxWidth(), visualTransformation = PasswordVisualTransformation())
                 OutlinedTextField(value = phone, onValueChange = { phone = it }, label = { Text(t("Phone Number", "फ़ोन नंबर", "ದೂರವಾಣಿ ಸಂಖ್ಯೆ")) }, modifier = Modifier.fillMaxWidth(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone))
@@ -573,9 +560,7 @@ fun RegisterScreen(navController: NavController, email: String) {
                 val scope = rememberCoroutineScope()
                 Button(
                     onClick = {
-                        if (firstName.isNotBlank() && username.isNotBlank() && password.isNotBlank() && phone.isNotBlank()) {
-                            UserSession.firstName = firstName
-                            UserSession.lastName = lastName
+                        if (username.isNotBlank() && password.isNotBlank() && phone.isNotBlank()) {
                             UserSession.email = email
                             UserSession.phone = phone
                             UserSession.username = username
@@ -630,7 +615,6 @@ fun LoginScreen(navController: NavController) {
                 Button(
                     onClick = {
                         if (email.isNotBlank() && password.isNotBlank()) {
-                            UserSession.firstName = "User"
                             UserSession.email = email
                             UserSession.username = email
                             UserSession.isProfileComplete = true
@@ -692,44 +676,140 @@ fun HomeScreen(navController: NavController, activity: MainActivity) {
                             <meta charset="utf-8" />
                             <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
                             <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+                            <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css"/>
                             <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+                            <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
                             <style>
-                                body, html, #map { height: 100vh; width: 100vw; margin: 0; padding: 0; overflow: hidden; background: #e0e0e0; }
-                                #loading { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-family: sans-serif; color: #666; z-index: 1000; }
+                                * { margin: 0; padding: 0; box-sizing: border-box; }
+                                body, html, #map { height: 100vh; width: 100vw; overflow: hidden; background: #e8eaf6; }
+                                .leaflet-routing-container { display: none !important; }
+                                #loading { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+                                    font-family: sans-serif; font-size: 16px; color: #555; z-index: 1000;
+                                    background: rgba(255,255,255,0.9); padding: 16px 24px; border-radius: 10px; }
+                                .status-pill { position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%);
+                                    background: rgba(40,40,60,0.85); color: white; padding: 8px 20px;
+                                    border-radius: 20px; font-family: sans-serif; font-size: 13px;
+                                    z-index: 500; white-space: nowrap; }
                             </style>
                         </head>
                         <body>
-                            <div id="loading">Initializing Map...</div>
+                            <div id="loading">Loading Map...</div>
                             <div id="map"></div>
+                            <div class="status-pill" id="status-pill">Searching for driver...</div>
                             <script>
-                                var map = null;
-                                var marker = null;
-                                function updateMap(lat, lon) {
+                                var map = null, ambulanceMarker = null, patientMarker = null, hospitalMarker = null;
+                                var routingControl = null, lastState = '', animFrame = null;
+                                var lastAmbLat = 0, lastAmbLon = 0;
+
+                                function animateMarker(marker, toLat, toLon) {
+                                    if (!marker) return;
+                                    var from = marker.getLatLng();
+                                    var steps = 40, step = 0;
+                                    if (animFrame) cancelAnimationFrame(animFrame);
+                                    function tick() {
+                                        step++;
+                                        var t = step / steps;
+                                        marker.setLatLng([from.lat + (toLat - from.lat) * t, from.lng + (toLon - from.lng) * t]);
+                                        if (step < steps) animFrame = requestAnimationFrame(tick);
+                                    }
+                                    tick();
+                                }
+
+                                function mkIcon(url, sz) {
+                                    return L.icon({ iconUrl: url, iconSize: [sz, sz], iconAnchor: [sz/2, sz/2], popupAnchor: [0, -sz/2] });
+                                }
+
+                                function updateRoute(fLat, fLon, tLat, tLon) {
+                                    if (routingControl) { map.removeControl(routingControl); routingControl = null; }
+                                    if (!fLat || !tLat || fLat === 0 || tLat === 0) return;
+                                    routingControl = L.Routing.control({
+                                        waypoints: [L.latLng(fLat, fLon), L.latLng(tLat, tLon)],
+                                        routeWhileDragging: false, show: false, addWaypoints: false, draggableWaypoints: false,
+                                        lineOptions: { styles: [{ color: '#E53935', opacity: 0.85, weight: 5 }] },
+                                        createMarker: function() { return null; },
+                                        router: L.Routing.osrmv1({ serviceUrl: 'https://router.project-osrm.org/route/v1', profile: 'driving' })
+                                    }).addTo(map);
+                                }
+
+                                function fitMarkers(markers) {
+                                    var pts = markers.filter(function(m){ return m && map.hasLayer(m); }).map(function(m){ return m.getLatLng(); });
+                                    if (pts.length >= 2) map.fitBounds(L.latLngBounds(pts).pad(0.3), { animate: true });
+                                    else if (pts.length === 1) map.panTo(pts[0], { animate: true });
+                                }
+
+                                function updateMap(ambLat, ambLon, patLat, patLon, hospLat, hospLon, state) {
                                     try {
-                                        if (typeof L === 'undefined') { 
-                                            setTimeout(function(){ updateMap(lat, lon); }, 200); 
-                                            return; 
-                                        }
+                                        if (typeof L === 'undefined') { setTimeout(function(){ updateMap(ambLat,ambLon,patLat,patLon,hospLat,hospLon,state); }, 400); return; }
                                         document.getElementById('loading').style.display = 'none';
-                                        
+                                        var cLat = (patLat && patLat !== 0) ? patLat : 13.0266;
+                                        var cLon = (patLon && patLon !== 0) ? patLon : 77.5714;
+
                                         if (!map) {
-                                            var initialLat = (lat && lat !== 0) ? lat : 13.0266;
-                                            var initialLon = (lon && lon !== 0) ? lon : 77.5714;
-                                            map = L.map('map', {zoomControl: false, attributionControl: false}).setView([initialLat, initialLon], 16);
-                                            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { attribution: '\u00a9 OpenStreetMap, \u00a9 CARTO', subdomains: 'abcd', maxZoom: 19 }).addTo(map);
-                                            
-                                            marker = L.marker([initialLat, initialLon], {
-                                                icon: L.icon({
-                                                    iconUrl: 'https://cdn-icons-png.flaticon.com/512/3603/3603850.png', 
-                                                    iconSize:[40,40],
-                                                    iconAnchor: [20, 40]
-                                                })
-                                            }).addTo(map);
-                                        } else if (lat && lat !== 0) {
-                                            map.panTo([lat, lon]);
-                                            marker.setLatLng([lat, lon]);
+                                            map = L.map('map', { zoomControl: true, attributionControl: false }).setView([cLat, cLon], 14);
+                                            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
                                         }
-                                    } catch(e) { console.error(e); }
+
+                                        // Patient marker - fixed at their SOS location
+                                        if (patLat && patLat !== 0 && !patientMarker) {
+                                            patientMarker = L.marker([patLat, patLon], {
+                                                icon: mkIcon('https://cdn-icons-png.flaticon.com/512/2922/2922510.png', 42),
+                                                zIndexOffset: 800
+                                            }).addTo(map).bindTooltip('You', { permanent: true, direction: 'top', offset: [0,-24] });
+                                        }
+
+                                        // Ambulance marker - moves smoothly
+                                        if (ambLat && ambLat !== 0) {
+                                            if (!ambulanceMarker) {
+                                                // Start ambulance offset so it doesn't overlap patient
+                                                var initLat = (patLat && patLat !== 0) ? patLat + 0.005 : ambLat;
+                                                var initLon = (patLon && patLon !== 0) ? patLon + 0.005 : ambLon;
+                                                ambulanceMarker = L.marker([initLat, initLon], {
+                                                    icon: mkIcon('https://cdn-icons-png.flaticon.com/512/2967/2967350.png', 46),
+                                                    zIndexOffset: 1000
+                                                }).addTo(map).bindTooltip('Ambulance', { permanent: false, direction: 'top', offset: [0,-30] });
+                                            } else if (Math.abs(ambLat - lastAmbLat) > 0.00002 || Math.abs(ambLon - lastAmbLon) > 0.00002) {
+                                                animateMarker(ambulanceMarker, ambLat, ambLon);
+                                            }
+                                            lastAmbLat = ambLat; lastAmbLon = ambLon;
+                                        }
+
+                                        // Hospital marker
+                                        if (hospLat && hospLat !== 0 && !hospitalMarker) {
+                                            hospitalMarker = L.marker([hospLat, hospLon], {
+                                                icon: mkIcon('https://cdn-icons-png.flaticon.com/512/1032/1032989.png', 40),
+                                                zIndexOffset: 900
+                                            }).bindTooltip('Hospital', { permanent: true, direction: 'top', offset: [0,-26] });
+                                        }
+
+                                        // State-based logic
+                                        var stateChanged = state !== lastState;
+                                        if (state === 'pending') {
+                                            document.getElementById('status-pill').textContent = 'Searching for ambulance...';
+                                            if (routingControl) { map.removeControl(routingControl); routingControl = null; }
+                                            if (hospitalMarker && map.hasLayer(hospitalMarker)) map.removeLayer(hospitalMarker);
+                                            if (patientMarker && !map.hasLayer(patientMarker)) patientMarker.addTo(map);
+                                        } else if (state === 'accepted') {
+                                            document.getElementById('status-pill').textContent = 'Driver on the way to you!';
+                                            if (hospitalMarker && map.hasLayer(hospitalMarker)) map.removeLayer(hospitalMarker);
+                                            if (patientMarker && !map.hasLayer(patientMarker)) patientMarker.addTo(map);
+                                            if (stateChanged && ambLat !== 0 && patLat !== 0) updateRoute(ambLat, ambLon, patLat, patLon);
+                                            fitMarkers([ambulanceMarker, patientMarker]);
+                                        } else if (state === 'active') {
+                                            document.getElementById('status-pill').textContent = 'Heading to hospital!';
+                                            if (patientMarker && map.hasLayer(patientMarker)) map.removeLayer(patientMarker);
+                                            if (hospitalMarker && !map.hasLayer(hospitalMarker)) hospitalMarker.addTo(map);
+                                            if (stateChanged && ambLat !== 0 && hospLat !== 0) updateRoute(ambLat, ambLon, hospLat, hospLon);
+                                            fitMarkers([ambulanceMarker, hospitalMarker]);
+                                        } else if (state === 'completed') {
+                                            document.getElementById('status-pill').textContent = 'Ride Completed!';
+                                            if (routingControl) { map.removeControl(routingControl); routingControl = null; }
+                                            if (hospitalMarker && hospLat !== 0) {
+                                                if (!map.hasLayer(hospitalMarker)) hospitalMarker.addTo(map);
+                                                map.panTo([hospLat, hospLon]);
+                                            }
+                                        }
+                                        lastState = state;
+                                    } catch(e) { console.error('Map error: ' + e); }
                                 }
                             </script>
                         </body>
@@ -769,11 +849,11 @@ fun HomeScreen(navController: NavController, activity: MainActivity) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Card(shape = RoundedCornerShape(20.dp), colors = CardDefaults.cardColors(containerColor = Color.White), elevation = CardDefaults.cardElevation(8.dp)) {
-                Text(t("Welcome, ${UserSession.firstName}", "स्वागत है, ${UserSession.firstName}", "ಸ್ವಾಗತ, ${UserSession.firstName}"), modifier = Modifier.padding(vertical = 8.dp, horizontal = 16.dp), fontWeight = FontWeight.Bold, color = DeepPurple)
+                Text(t("Welcome, ${UserSession.username}", "स्वागत है, ${UserSession.username}", "ಸ್ವಾಗತ, ${UserSession.username}"), modifier = Modifier.padding(vertical = 8.dp, horizontal = 16.dp), fontWeight = FontWeight.Bold, color = DeepPurple)
             }
             Button(
                 onClick = {
-                    UserSession.firstName = ""; UserSession.phone = ""; UserSession.email = ""; UserSession.username = ""; UserSession.isProfileComplete = false
+                    UserSession.phone = ""; UserSession.email = ""; UserSession.username = ""; UserSession.isProfileComplete = false
                     navController.navigate("splash") { popUpTo("home") { inclusive = true } }
                 },
                 colors = ButtonDefaults.buttonColors(containerColor = ResQGRed)
@@ -825,7 +905,7 @@ fun HomeScreen(navController: NavController, activity: MainActivity) {
                             activity.fetchLastLocation { location ->
                                 scope.launch {
                                     try {
-                                        val fullName = "${UserSession.firstName} ${UserSession.lastName}".trim()
+                                        val fullName = UserSession.username
                                         val phone = UserSession.phone
                                         if (phone.isBlank()) {
                                             Toast.makeText(activity, "Error: Phone number missing. Please register again.", Toast.LENGTH_LONG).show()
@@ -1068,45 +1148,50 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
                     Text("Total Fare: ₹$fare", fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, color = DeepPurple)
                     Spacer(modifier = Modifier.height(8.dp))
                     Text("Please complete the payment to end session", fontSize = 14.sp, color = Color.Gray)
-                    
-                    if (UserSession.isAutoPayEnabled) {
-                        Card(
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
-                            colors = CardDefaults.cardColors(containerColor = Color(0xFFE8F5E9)),
-                            shape = RoundedCornerShape(8.dp)
-                        ) {
-                            Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Default.LocationOn, contentDescription = null, tint = Color(0xFF2E7D32), modifier = Modifier.size(24.dp))
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Text("AutoPay Active: Settlement scheduled in 3 days.", color = Color(0xFF2E7D32), fontSize = 14.sp, fontWeight = FontWeight.Medium)
+
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    // PhonePe Pay Now button - always visible
+                    Button(
+                        onClick = {
+                            val upiUri = "upi://pay?pa=resqgo@upi&pn=ResQGo&am=$fare&cu=INR"
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(upiUri))
+                            intent.setPackage("com.phonepe.app")
+                            try {
+                                activity.startActivity(intent)
+                            } catch (e: Exception) {
+                                // Fallback to any UPI app
+                                val fallbackIntent = Intent(Intent.ACTION_VIEW, Uri.parse(upiUri))
+                                val chooser = Intent.createChooser(fallbackIntent, "Pay via UPI")
+                                activity.startActivity(chooser)
                             }
-                        }
-                    } else {
-                        Spacer(modifier = Modifier.height(24.dp))
-                        Button(
-                            onClick = {
-                                val upiUri = "upi://pay?pa=resqgo@upi&pn=ResQGo&am=$fare&cu=INR"
-                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(upiUri))
-                                intent.setPackage("com.phonepe.app")
-                                try {
-                                    activity.startActivity(intent)
-                                } catch (e: Exception) {
-                                    val fallbackIntent = Intent(Intent.ACTION_VIEW, Uri.parse(upiUri))
-                                    val chooser = Intent.createChooser(fallbackIntent, "Pay with UPI")
-                                    activity.startActivity(chooser)
-                                }
-                            },
-                            modifier = Modifier.fillMaxWidth().height(60.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF5f7cff)),
-                            shape = RoundedCornerShape(12.dp)
-                        ) {
-                            Text("PAY NOW", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 20.sp)
+                        },
+                        modifier = Modifier.fillMaxWidth().height(58.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF5B3EB6)),
+                        shape = RoundedCornerShape(14.dp),
+                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 8.dp)
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("📱", fontSize = 22.sp)
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Text("PAY NOW via PhonePe", color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 17.sp)
                         }
                     }
-                    
-                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    // AutoPay fallback note
+                    Text(
+                        text = "If not paid now, AutoPay will auto-settle after 3 days.",
+                        fontSize = 12.sp,
+                        color = Color(0xFF888888),
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
                     TextButton(onClick = { navController.popBackStack() }) {
-                        Text("Close", color = Color.Gray)
+                        Text("Close", color = Color.Gray, fontSize = 13.sp)
                     }
                 } else {
                     val msg = when {
