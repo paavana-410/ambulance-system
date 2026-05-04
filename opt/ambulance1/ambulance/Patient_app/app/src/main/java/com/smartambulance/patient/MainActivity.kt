@@ -55,6 +55,7 @@ import kotlinx.coroutines.launch
 
 val DeepPurple = Color(0xFF6200EE)
 val ResQGRed = Color(0xFFFF4D4D)
+val LightBlue = Color(0xFFEBF0FE)
 
 class MainActivity : ComponentActivity() {
 
@@ -196,9 +197,7 @@ fun t(en: String, hi: String, kn: String): String {
     }
 }
 
-val DeepPurple = Color(0xFF30336B)
-val LightBlue = Color(0xFFEBF0FE)
-val ResQGRed = Color(0xFFD32F2F)
+
 
 @Composable
 fun AppNavigation(activity: MainActivity, linkFlow: SharedFlow<String>? = null) {
