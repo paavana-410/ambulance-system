@@ -33,7 +33,7 @@
                 <category android:name="android.intent.category.DEFAULT"/>
                 <category android:name="android.intent.category.BROWSABLE"/>
                 <data android:scheme="https" 
-                    android:host="ambulanceapp-7472c.firebaseapp.com"
+                    android:host="resqgo-system.firebaseapp.com"
                     android:pathPrefix="/finishSignUp"/>
             </intent-filter>
 
