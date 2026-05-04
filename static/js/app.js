@@ -6,6 +6,7 @@ let map;
 let ambulanceMarker;
 let patientMarker = null;
 let hospitalMarker = null;
+let patientCircle = null;
 let hospitalSearchMarkers = [];
 
 
@@ -1004,7 +1005,8 @@ function setPatientLocation(location, patientName) {
         .bindPopup(`🚨 ${patientName || 'Patient'}<br>Emergency Location`)
         .openPopup();
 
-    L.circle([lat, lon], {
+    if (patientCircle) map.removeLayer(patientCircle);
+    patientCircle = L.circle([lat, lon], {
         color: 'red',
         fillColor: '#f03',
         fillOpacity: 0.1,
@@ -1038,16 +1040,30 @@ function updateSystemStatus() {
 function closeMissionModal() {
     console.log("🚪 Closing mission completion modal...");
     document.getElementById('mission-complete-modal').style.display = 'none';
-    // Ensure the dashboard is reset to available state
+    
+    // Reset dashboard UI
     document.getElementById('status-indicator').textContent = 'Available';
     document.getElementById('status-indicator').className = 'status-indicator status-available';
     document.getElementById('your-status').textContent = 'Available';
     
-    // Clear any remaining markers just in case
+    // 🧹 CLEAN MAP: Remove circles and markers
     if (patientMarker) map.removeLayer(patientMarker);
     if (hospitalMarker) map.removeLayer(hospitalMarker);
+    if (patientCircle) map.removeLayer(patientCircle);
+    if (window.ambulanceCircle) map.removeLayer(window.ambulanceCircle);
+    
     patientMarker = null;
     hospitalMarker = null;
+    patientCircle = null;
+    
+    // Clear any active routes
+    if (routingControl) {
+        map.removeControl(routingControl);
+        routingControl = null;
+    }
+    
+    // 🔔 Alert the driver
+    alert("✅ Mission Cleared! You are now Available and Ready for the next ride.");
     
     // Resume polling for new emergencies
     startEmergencyPolling();
