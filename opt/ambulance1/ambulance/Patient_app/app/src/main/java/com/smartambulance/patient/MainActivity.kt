@@ -666,55 +666,67 @@ fun HomeScreen(navController: NavController, activity: MainActivity) {
         AndroidView(
             factory = { context ->
                 WebView(context).apply {
+                    layoutParams = android.view.ViewGroup.LayoutParams(
+                        android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+                        android.view.ViewGroup.LayoutParams.MATCH_PARENT
+                    )
                     webViewClient = WebViewClient()
+                    webChromeClient = android.webkit.WebChromeClient()
+                    
                     settings.javaScriptEnabled = true
                     settings.domStorageEnabled = true
+                    settings.databaseEnabled = true
+                    settings.loadWithOverviewMode = true
+                    settings.useWideViewPort = true
                     settings.mixedContentMode = android.webkit.WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
-                    settings.cacheMode = android.webkit.WebSettings.LOAD_NO_CACHE
+                    
+                    setPadding(0,0,0,0)
                     
                     val mapHtml = """
                         <!DOCTYPE html>
                         <html>
                         <head>
+                            <meta charset="utf-8" />
                             <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
                             <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
                             <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
                             <style>
-                                body, html, #map { height: 100%; width: 100%; margin: 0; padding: 0; overflow: hidden; background: #f0f0f0; }
-                                #loading { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-family: sans-serif; color: #666; }
+                                body, html, #map { height: 100vh; width: 100vw; margin: 0; padding: 0; overflow: hidden; background: #e0e0e0; }
+                                #loading { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-family: sans-serif; color: #666; z-index: 1000; }
                             </style>
                         </head>
                         <body>
-                            <div id="loading">Loading Map...</div>
+                            <div id="loading">Initializing Map...</div>
                             <div id="map"></div>
                             <script>
                                 var map = null;
                                 var marker = null;
                                 function updateMap(lat, lon) {
-                                    document.getElementById('loading').style.display = 'none';
-                                    if (typeof L === 'undefined') { 
-                                        setTimeout(function(){ updateMap(lat, lon); }, 100); 
-                                        return; 
-                                    }
-                                    if (!map) {
-                                        var initialLat = lat !== 0 ? lat : 20.5937;
-                                        var initialLon = lon !== 0 ? lon : 78.9629;
-                                        map = L.map('map', {zoomControl: false}).setView([initialLat, initialLon], 16);
-                                        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-                                        marker = L.marker([initialLat, initialLon], {
-                                            icon: L.icon({
-                                                iconUrl: 'https://cdn-icons-png.flaticon.com/512/3603/3603850.png', 
-                                                iconSize:[40,40],
-                                                iconAnchor: [20, 40]
-                                            })
-                                        }).addTo(map);
-                                    } else if (map && lat !== 0) {
-                                        map.panTo([lat, lon]);
-                                        marker.setLatLng([lat, lon]);
-                                    }
-                                }
-                                if (window.pendingLat && window.pendingLon) {
-                                    updateMap(window.pendingLat, window.pendingLon);
+                                    try {
+                                        if (typeof L === 'undefined') { 
+                                            setTimeout(function(){ updateMap(lat, lon); }, 200); 
+                                            return; 
+                                        }
+                                        document.getElementById('loading').style.display = 'none';
+                                        
+                                        if (!map) {
+                                            var initialLat = (lat && lat !== 0) ? lat : 13.0266;
+                                            var initialLon = (lon && lon !== 0) ? lon : 77.5714;
+                                            map = L.map('map', {zoomControl: false, attributionControl: false}).setView([initialLat, initialLon], 16);
+                                            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+                                            
+                                            marker = L.marker([initialLat, initialLon], {
+                                                icon: L.icon({
+                                                    iconUrl: 'https://cdn-icons-png.flaticon.com/512/3603/3603850.png', 
+                                                    iconSize:[40,40],
+                                                    iconAnchor: [20, 40]
+                                                })
+                                            }).addTo(map);
+                                        } else if (lat && lat !== 0) {
+                                            map.panTo([lat, lon]);
+                                            marker.setLatLng([lat, lon]);
+                                        }
+                                    } catch(e) { console.error(e); }
                                 }
                             </script>
                         </body>
@@ -728,6 +740,24 @@ fun HomeScreen(navController: NavController, activity: MainActivity) {
             },
             modifier = Modifier.fillMaxSize()
         )
+
+        // Emergency Call Button
+        Card(
+            modifier = Modifier.align(Alignment.CenterEnd).padding(end = 16.dp),
+            shape = CircleShape,
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            elevation = CardDefaults.cardElevation(10.dp)
+        ) {
+            IconButton(
+                onClick = {
+                    val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:108")) // Default Emergency Number
+                    activity.startActivity(intent)
+                },
+                modifier = Modifier.size(56.dp)
+            ) {
+                Icon(Icons.Default.LocationOn, contentDescription = "Call Help", tint = ResQGRed, modifier = Modifier.size(32.dp))
+            }
+        }
 
         // Top Bar
         Row(
