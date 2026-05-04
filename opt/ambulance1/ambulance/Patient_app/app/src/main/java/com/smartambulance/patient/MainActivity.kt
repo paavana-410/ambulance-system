@@ -681,6 +681,7 @@ fun HomeScreen(navController: NavController, activity: MainActivity) {
                     settings.loadWithOverviewMode = true
                     settings.useWideViewPort = true
                     settings.mixedContentMode = android.webkit.WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+                    settings.userAgentString = "ResQGo/1.0 (Android; Student Project; contact@resqgo.app)"
                     
                     setPadding(0,0,0,0)
                     
@@ -715,7 +716,7 @@ fun HomeScreen(navController: NavController, activity: MainActivity) {
                                             var initialLat = (lat && lat !== 0) ? lat : 13.0266;
                                             var initialLon = (lon && lon !== 0) ? lon : 77.5714;
                                             map = L.map('map', {zoomControl: false, attributionControl: false}).setView([initialLat, initialLon], 16);
-                                            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+                                            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { attribution: '\u00a9 OpenStreetMap, \u00a9 CARTO', subdomains: 'abcd', maxZoom: 19 }).addTo(map);
                                             
                                             marker = L.marker([initialLat, initialLon], {
                                                 icon: L.icon({
@@ -734,7 +735,7 @@ fun HomeScreen(navController: NavController, activity: MainActivity) {
                         </body>
                         </html>
                     """.trimIndent()
-                    loadDataWithBaseURL("https://openstreetmap.org", mapHtml, "text/html", "UTF-8", null)
+                    loadDataWithBaseURL("https://carto.com", mapHtml, "text/html", "UTF-8", null)
                 }
             },
             update = { view ->
@@ -923,10 +924,11 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
                     
                     settings.javaScriptEnabled = true
                     settings.domStorageEnabled = true
-                    settings.databaseEnabled = true // Added
-                    settings.loadWithOverviewMode = true // Added
-                    settings.useWideViewPort = true // Added
+                    settings.databaseEnabled = true
+                    settings.loadWithOverviewMode = true
+                    settings.useWideViewPort = true
                     settings.mixedContentMode = android.webkit.WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+                    settings.userAgentString = "ResQGo/1.0 (Android; Student Project; contact@resqgo.app)"
                     
                     // Force the map to fill the space
                     setPadding(0,0,0,0)
@@ -962,9 +964,7 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
                                             var initialLat = (lat && lat !== 0) ? lat : 13.0266;
                                             var initialLon = (lon && lon !== 0) ? lon : 77.5714;
                                             map = L.map('map', {zoomControl: false, attributionControl: false}).setView([initialLat, initialLon], 16);
-                                            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                                                maxZoom: 19
-                                            }).addTo(map);
+                                            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { attribution: '\u00a9 OpenStreetMap, \u00a9 CARTO', subdomains: 'abcd', maxZoom: 19 }).addTo(map);
                                             
                                             marker = L.marker([initialLat, initialLon], {
                                                 icon: L.icon({
@@ -986,7 +986,7 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
                         </body>
                         </html>
                     """.trimIndent()
-                    loadDataWithBaseURL("https://openstreetmap.org", mapHtml, "text/html", "UTF-8", null)
+                    loadDataWithBaseURL("https://carto.com", mapHtml, "text/html", "UTF-8", null)
                 }
             },
             update = { view ->

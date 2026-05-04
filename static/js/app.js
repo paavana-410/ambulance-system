@@ -121,8 +121,8 @@ function initMap() {
     // Center map on currrent location initially
     map = L.map('map').setView([currentLocation.lat, currentLocation.lon], 15);
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors'
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+        attribution: '© OpenStreetMap, © CARTO'
     }).addTo(map);
 
     // 🚑 Ambulance marker - Initialize with current location to avoid undefined errors
