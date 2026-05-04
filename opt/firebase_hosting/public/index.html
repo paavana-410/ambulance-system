@@ -86,17 +86,26 @@
         <div class="logo">ResQGo</div>
         <h1>Verifying Your Account</h1>
         <p>We are redirecting you to the ResQGo app to complete your sign-in.</p>
-        <a href="intent://resqgo-system.firebaseapp.com/finishSignUp#Intent;scheme=https;package=com.smartambulance.patient;end" class="btn">
+        <a id="redirect-btn" href="#" class="btn">
             Open ResQGo App
         </a>
     </div>
     <script>
+        // Extract query parameters from the Firebase magic link
+        const queryParams = window.location.search;
+        
+        // Construct the deep link intent URL WITH the query parameters included
+        const intentUrl = "intent://resqgo-system.firebaseapp.com/finishSignUp" + queryParams + "#Intent;scheme=https;package=com.smartambulance.patient;end";
+        
+        // Update the fallback button
+        document.getElementById('redirect-btn').href = intentUrl;
+
         // Automatic redirect attempt for Android
         setTimeout(() => {
             if (/Android/i.test(navigator.userAgent)) {
-                window.location.href = "intent://resqgo-system.firebaseapp.com/finishSignUp#Intent;scheme=https;package=com.smartambulance.patient;end";
+                window.location.href = intentUrl;
             }
-        }, 1500);
+        }, 1000);
     </script>
 </body>
 </html>
