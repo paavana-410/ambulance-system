@@ -488,6 +488,16 @@ def send_loc():
     return jsonify({"status": "ok"})
 
 
+def get_driving_distance(lat1, lon1, lat2, lon2):
+    try:
+        url = f"http://router.project-osrm.org/route/v1/driving/{lon1},{lat1};{lon2},{lat2}?overview=false"
+        res = requests.get(url, timeout=2).json()
+        if res.get("routes") and len(res["routes"]) > 0:
+            return res["routes"][0]["distance"] / 1000.0 # Return in km
+    except Exception as e:
+        print(f"OSRM error: {e}")
+    return float('inf')
+
 @app.route("/api/nearby_hospitals")
 @app.route("/api/nearby_hos_os")
 def nearby():
@@ -522,8 +532,12 @@ def nearby():
                 h_lon = item.get("lon") or item.get("center", {}).get("lon")
                 tags  = item.get("tags", {})
                 name  = tags.get("name", "Hospital")
-                if "clinic" in name.lower():
+                
+                # Neglect clinics, polyclinics, dispensaries
+                name_lower = name.lower()
+                if "clinic" in name_lower or "dispensary" in name_lower or "care" in name_lower or "dental" in name_lower:
                     continue
+                    
                 if h_lat and h_lon:
                     raw.append({
                         "name":    name,
@@ -536,12 +550,23 @@ def nearby():
         print(f"? Overpass error: {exc}")
         raw = MOCK_HOSPITALS
 
+    # Calculate shortest route using suitable algorithm (OSRM API)
+    # First, sort by Haversine to get top 15 closest physically
     for h in raw:
-        h["distance_val"] = calculate_haversine(float(lat), float(lon), h["location"]["lat"], h["location"]["lon"])
-        h["distance"]     = f"{h['distance_val']:.2f} km"
-    raw.sort(key=lambda x: x["distance_val"])
+        h["haversine_val"] = calculate_haversine(float(lat), float(lon), h["location"]["lat"], h["location"]["lon"])
+    
+    raw.sort(key=lambda x: x["haversine_val"])
+    top_candidates = raw[:10]
 
-    return jsonify({"status": "success", "hospitals": raw})
+    # Now calculate actual driving distance for top candidates
+    for h in top_candidates:
+        driving_dist = get_driving_distance(float(lat), float(lon), h["location"]["lat"], h["location"]["lon"])
+        h["distance_val"] = driving_dist if driving_dist != float('inf') else h["haversine_val"]
+        h["distance"]     = f"{h['distance_val']:.2f} km"
+        
+    top_candidates.sort(key=lambda x: x["distance_val"])
+
+    return jsonify({"status": "success", "hospitals": top_candidates[:5]})
 
 
 @app.route("/api/assign_hospital", methods=["POST"])
