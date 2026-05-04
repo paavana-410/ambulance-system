@@ -135,37 +135,17 @@ function initMap() {
 }
 
 function startLocationTracking() {
-    if (!navigator.geolocation) {
-        alert("Geolocation not supported by this browser.");
-        return;
-    }
+    // Web dashboard uses fixed simulation location (Ramaiah Hospital Bus Stop)
+    // Real GPS is not used - driver position is simulated for demo
+    console.log("📍 Simulation mode: Driver fixed at M.S. Ramaiah Hospital Bus Stop");
 
-    navigator.geolocation.watchPosition(function(position){
-        if (isMoving) return; // Don't let real GPS override simulation or manual move
-
-        currentLocation = {
-            lat: position.coords.latitude,
-            lon: position.coords.longitude
-        };
-
-        console.log("📍 Live GPS Update:", currentLocation);
-
-        // Move marker safely
-        if(ambulanceMarker) {
-            ambulanceMarker.setLatLng([currentLocation.lat, currentLocation.lon]);
-            if(!mapCentered) {
-                map.setView([currentLocation.lat, currentLocation.lon]);
-                mapCentered = true;
-            }
+    // Send fixed location to server immediately, then every 5 seconds
+    sendLocationToServer(currentLocation);
+    setInterval(() => {
+        if (!isMoving) {
+            sendLocationToServer(currentLocation);
         }
-
-        sendLocationToServer(currentLocation);
-    }, function(error){
-        console.warn("GPS Tracking Warning (Expected on HTTP):", error.message);
-    },{
-        enableHighAccuracy: true,
-        maximumAge: 1000
-    });
+    }, 5000);
 }
 
 // 📡 Send driver GPS location to server
