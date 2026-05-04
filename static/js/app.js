@@ -26,8 +26,8 @@ let routeCoordinates = [];
 let movementIndex = 0;
 let movementInterval = null;
 
-// Fixed test location (Bangalore)
-let currentLocation = { lat: 13.026632, lon: 77.571419 };
+// Fixed test location - M.S. Ramaiah Hospital Bus Stop, Bangalore
+let currentLocation = { lat: 13.0299, lon: 77.5659 };
 
 
 
