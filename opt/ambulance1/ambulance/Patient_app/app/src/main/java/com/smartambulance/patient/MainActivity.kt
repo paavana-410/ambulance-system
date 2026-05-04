@@ -870,6 +870,11 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
     var hospitals by remember { mutableStateOf<List<Hospital>>(emptyList()) }
     var fare by remember { mutableStateOf(0.0) }
 
+    var patientLat by remember { mutableStateOf(0.0) }
+    var patientLon by remember { mutableStateOf(0.0) }
+    var hospLat by remember { mutableStateOf(0.0) }
+    var hospLon by remember { mutableStateOf(0.0) }
+    
     var lastStatus by remember { mutableStateOf("") }
     
     LaunchedEffect(Unit) {
@@ -882,6 +887,10 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
                 destName = status.dest_name
                 driverPhone = status.driver_phone
                 fare = status.fare ?: 0.0
+                patientLat = status.lat ?: 0.0
+                patientLon = status.lon ?: 0.0
+                hospLat = status.dest_lat ?: 0.0
+                hospLon = status.dest_lon ?: 0.0
 
                 if (emergencyState != lastStatus) {
                    Log.d("STATUS_CHANGE", "New status: $emergencyState")
@@ -951,33 +960,83 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
                             <div id="map"></div>
                             <script>
                                 var map = null;
-                                var marker = null;
-                                function updateMap(lat, lon) {
+                                var ambulanceMarker = null;
+                                var patientMarker = null;
+                                var hospitalMarker = null;
+                                var routeLine = null;
+
+                                function updateMap(ambLat, ambLon, patLat, patLon, hospLat, hospLon, state) {
                                     try {
                                         if (typeof L === 'undefined') { 
-                                            setTimeout(function(){ updateMap(lat, lon); }, 200); 
+                                            setTimeout(function(){ updateMap(ambLat, ambLon, patLat, patLon, hospLat, hospLon, state); }, 200); 
                                             return; 
                                         }
                                         document.getElementById('loading').style.display = 'none';
                                         
+                                        var centerLat = (ambLat && ambLat !== 0) ? ambLat : ((patLat && patLat !== 0) ? patLat : 13.0266);
+                                        var centerLon = (ambLon && ambLon !== 0) ? ambLon : ((patLon && patLon !== 0) ? patLon : 77.5714);
+
                                         if (!map) {
-                                            var initialLat = (lat && lat !== 0) ? lat : 13.0266;
-                                            var initialLon = (lon && lon !== 0) ? lon : 77.5714;
-                                            map = L.map('map', {zoomControl: false, attributionControl: false}).setView([initialLat, initialLon], 16);
-                                            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { attribution: '\u00a9 OpenStreetMap, \u00a9 CARTO', subdomains: 'abcd', maxZoom: 19 }).addTo(map);
+                                            map = L.map('map', {zoomControl: false, attributionControl: false}).setView([centerLat, centerLon], 15);
+                                            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { maxZoom: 19 }).addTo(map);
                                             
-                                            marker = L.marker([initialLat, initialLon], {
+                                            ambulanceMarker = L.marker([centerLat, centerLon], {
                                                 icon: L.icon({
                                                     iconUrl: 'https://cdn-icons-png.flaticon.com/512/2967/2967350.png', 
-                                                    iconSize:[40,40],
-                                                    iconAnchor: [20, 20]
-                                                })
+                                                    iconSize:[40,40], iconAnchor: [20, 20]
+                                                }),
+                                                zIndexOffset: 1000
                                             }).addTo(map);
-                                        } else if (lat && lat !== 0) {
-                                            var newPos = [lat, lon];
+                                            
+                                            patientMarker = L.marker([0, 0], {
+                                                icon: L.icon({
+                                                    iconUrl: 'https://cdn-icons-png.flaticon.com/512/2922/2922510.png',
+                                                    iconSize:[35,35], iconAnchor: [17, 17]
+                                                })
+                                            });
+
+                                            hospitalMarker = L.marker([0, 0], {
+                                                icon: L.icon({
+                                                    iconUrl: 'https://cdn-icons-png.flaticon.com/512/1032/1032989.png',
+                                                    iconSize:[35,35], iconAnchor: [17, 17]
+                                                })
+                                            });
+
+                                            routeLine = L.polyline([], {color: '#d32f2f', weight: 4, opacity: 0.7, dashArray: '10, 10'}).addTo(map);
+                                        } 
+
+                                        if (ambLat && ambLat !== 0) {
+                                            var newPos = [ambLat, ambLon];
                                             map.panTo(newPos);
-                                            marker.setLatLng(newPos);
+                                            ambulanceMarker.setLatLng(newPos);
                                         }
+
+                                        // Update Patient
+                                        if (patLat && patLat !== 0) {
+                                            patientMarker.setLatLng([patLat, patLon]);
+                                            if (!map.hasLayer(patientMarker)) patientMarker.addTo(map);
+                                        }
+
+                                        // Update Hospital
+                                        if (hospLat && hospLat !== 0) {
+                                            hospitalMarker.setLatLng([hospLat, hospLon]);
+                                            if (!map.hasLayer(hospitalMarker)) hospitalMarker.addTo(map);
+                                        }
+
+                                        // Update Route Line
+                                        if (state === 'pending' || state === 'accepted') {
+                                            if (ambLat !== 0 && patLat !== 0) {
+                                                routeLine.setLatLngs([[ambLat, ambLon], [patLat, patLon]]);
+                                            }
+                                        } else if (state === 'active') {
+                                            if (ambLat !== 0 && hospLat !== 0) {
+                                                routeLine.setLatLngs([[ambLat, ambLon], [hospLat, hospLon]]);
+                                            }
+                                            if (map.hasLayer(patientMarker)) map.removeLayer(patientMarker);
+                                        } else {
+                                            routeLine.setLatLngs([]);
+                                        }
+
                                     } catch(e) {
                                         console.error("Map Error: " + e);
                                     }
@@ -990,7 +1049,7 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
                 }
             },
             update = { view ->
-                view.evaluateJavascript("if(typeof updateMap==='function'){updateMap($lat, $lon);}else{window.pendingLat=$lat; window.pendingLon=$lon;}", null)
+                view.evaluateJavascript("if(typeof updateMap==='function'){updateMap($lat, $lon, $patientLat, $patientLon, $hospLat, $hospLon, '$emergencyState');}", null)
             },
             modifier = Modifier.fillMaxSize()
         )
