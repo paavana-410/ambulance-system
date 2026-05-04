@@ -458,13 +458,13 @@ fun EmailScreen(navController: NavController, viewModel: AuthViewModel) {
                 OutlinedButton(
                     onClick = {
                         UserSession.email = "demo@resqgo.com"
+                        UserSession.username = "demo@resqgo.com"
                         UserSession.role = "patient"
-                        UserSession.isPatientLoggedIn = true
                         UserSession.isProfileComplete = true
                         navController.navigate("home") { popUpTo(0) }
                     },
                     modifier = Modifier.fillMaxWidth().height(50.dp),
-                    border = android.view.View.generateViewId().let { androidx.compose.foundation.BorderStroke(1.dp, DeepPurple) },
+                    border = androidx.compose.foundation.BorderStroke(1.dp, DeepPurple),
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     Text("SKIP FOR DEMO (GUEST)", color = DeepPurple, fontWeight = FontWeight.SemiBold)
