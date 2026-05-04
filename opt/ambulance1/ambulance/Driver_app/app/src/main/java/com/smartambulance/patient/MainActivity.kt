@@ -499,28 +499,39 @@ fun DriverHomeScreen(navController: NavController, activity: MainActivity, viewM
         AndroidView(
             factory = { context ->
                 WebView(context).apply {
+                    layoutParams = android.view.ViewGroup.LayoutParams(
+                        android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+                        android.view.ViewGroup.LayoutParams.MATCH_PARENT
+                    )
                     webViewClient = WebViewClient()
+                    webChromeClient = android.webkit.WebChromeClient()
+                    
                     settings.javaScriptEnabled = true
                     settings.domStorageEnabled = true
+                    settings.databaseEnabled = true
+                    settings.loadWithOverviewMode = true
+                    settings.useWideViewPort = true
                     settings.mixedContentMode = android.webkit.WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
-                    settings.cacheMode = android.webkit.WebSettings.LOAD_NO_CACHE
+                    
+                    setPadding(0,0,0,0)
                     
                     val mapHtml = """
                         <!DOCTYPE html>
                         <html>
                         <head>
+                            <meta charset="utf-8" />
                             <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
                             <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
                             <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css"/>
                             <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
                             <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
                             <style>
-                                body, html, #map { height: 100%; width: 100%; margin: 0; padding: 0; overflow: hidden; background: #f0f0f0; }
-                                #loading { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-family: sans-serif; color: #666; }
+                                body, html, #map { height: 100vh; width: 100vw; margin: 0; padding: 0; overflow: hidden; background: #e0e0e0; }
+                                #loading { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-family: sans-serif; color: #666; z-index: 1000; }
                             </style>
                         </head>
                         <body>
-                            <div id="loading">Loading Map...</div>
+                            <div id="loading">Initializing Map...</div>
                             <div id="map"></div>
                             <script>
                                 var map = null;
@@ -528,55 +539,55 @@ fun DriverHomeScreen(navController: NavController, activity: MainActivity, viewM
                                 var routingControl = null;
 
                                 function updateMap(dLat, dLon, pLat, pLon, drawRoute) {
-                                    document.getElementById('loading').style.display = 'none';
-                                    if (typeof L === 'undefined' || typeof L.Routing === 'undefined') { 
-                                        setTimeout(function(){ updateMap(dLat, dLon, pLat, pLon, drawRoute); }, 100); 
-                                        return; 
-                                    }
-                                    
-                                    if (!map) {
-                                        var initialLat = dLat !== 0 ? dLat : 20.5937; // Default to India center if 0
-                                        var initialLon = dLon !== 0 ? dLon : 78.9629;
-                                        map = L.map('map', {zoomControl: false}).setView([initialLat, initialLon], 16);
-                                        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                                            attribution: '© OpenStreetMap contributors'
-                                        }).addTo(map);
-                                        driverMarker = L.marker([initialLat, initialLon], {
-                                            icon: L.icon({
-                                                iconUrl: 'https://cdn-icons-png.flaticon.com/512/2967/2967350.png', 
-                                                iconSize:[35,35],
-                                                iconAnchor: [17, 17]
-                                            })
-                                        }).addTo(map);
-                                    }
-
-                                    if (map && dLat !== 0) {
-                                        driverMarker.setLatLng([dLat, dLon]);
-                                        
-                                        if (drawRoute && pLat !== 0) {
-                                            if (!routingControl) {
-                                                routingControl = L.Routing.control({
-                                                    waypoints: [L.latLng(dLat, dLon), L.latLng(pLat, pLon)],
-                                                    show: false,
-                                                    addWaypoints: false,
-                                                    draggableWaypoints: false,
-                                                    fitSelectedRoutes: true
-                                                }).addTo(map);
-                                            } else {
-                                                routingControl.setWaypoints([L.latLng(dLat, dLon), L.latLng(pLat, pLon)]);
-                                            }
-                                        } else {
-                                            if (routingControl) {
-                                                map.removeControl(routingControl);
-                                                routingControl = null;
-                                            }
-                                            map.panTo([dLat, dLon]);
+                                    try {
+                                        if (typeof L === 'undefined' || typeof L.Routing === 'undefined') { 
+                                            setTimeout(function(){ updateMap(dLat, dLon, pLat, pLon, drawRoute); }, 200); 
+                                            return; 
                                         }
-                                    }
-                                }
+                                        document.getElementById('loading').style.display = 'none';
+                                        
+                                        if (!map) {
+                                            var initialLat = (dLat && dLat !== 0) ? dLat : 13.0266;
+                                            var initialLon = (dLon && dLon !== 0) ? dLon : 77.5714;
+                                            map = L.map('map', {zoomControl: false, attributionControl: false}).setView([initialLat, initialLon], 16);
+                                            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+                                            
+                                            driverMarker = L.marker([initialLat, initialLon], {
+                                                icon: L.icon({
+                                                    iconUrl: 'https://cdn-icons-png.flaticon.com/512/2967/2967350.png', 
+                                                    iconSize:[40,40],
+                                                    iconAnchor: [20, 20]
+                                                })
+                                            }).addTo(map);
+                                        }
 
-                                if (window.pendingData) {
-                                    updateMap(window.pendingData.dLat, window.pendingData.dLon, window.pendingData.pLat, window.pendingData.pLon, window.pendingData.drawRoute);
+                                        if (map && dLat && dLat !== 0) {
+                                            driverMarker.setLatLng([dLat, dLon]);
+                                            
+                                            if (drawRoute && pLat && pLat !== 0) {
+                                                if (!routingControl) {
+                                                    routingControl = L.Routing.control({
+                                                        waypoints: [L.latLng(dLat, dLon), L.latLng(pLat, pLon)],
+                                                        show: false,
+                                                        addWaypoints: false,
+                                                        draggableWaypoints: false,
+                                                        fitSelectedRoutes: true,
+                                                        lineOptions: { styles: [{ color: '#f03', weight: 6 }] }
+                                                    }).addTo(map);
+                                                } else {
+                                                    routingControl.setWaypoints([L.latLng(dLat, dLon), L.latLng(pLat, pLon)]);
+                                                }
+                                            } else {
+                                                if (routingControl) {
+                                                    map.removeControl(routingControl);
+                                                    routingControl = null;
+                                                }
+                                                map.panTo([dLat, dLon]);
+                                            }
+                                        }
+                                    } catch(e) {
+                                        console.error("Map Error: " + e);
+                                    }
                                 }
                             </script>
                         </body>
