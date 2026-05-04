@@ -118,11 +118,12 @@ function logout() {
 }
 
 function initMap() {
-    // Center map on currrent location initially
+    // Center map on current location - Street level zoom 15
     map = L.map('map').setView([currentLocation.lat, currentLocation.lon], 15);
 
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-        attribution: '© OpenStreetMap, © CARTO'
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors',
+        maxZoom: 19
     }).addTo(map);
 
     // 🚑 Ambulance marker - Initialize with current location to avoid undefined errors
@@ -1013,7 +1014,7 @@ function updateSystemStatus() {
         }
     })
     .catch(error => {
-        console.error('Error updating system status:', error);
+        // Silently ignore status update errors - non-critical
     });
 }
 
