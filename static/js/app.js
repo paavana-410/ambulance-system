@@ -1024,13 +1024,33 @@ function updateSystemStatus() {
     .then(response => response.json())
     .then(data => {
         if (data.status !== 'error') {
-            document.getElementById('active-count').textContent = data.active_ambulances || 0;
-            document.getElementById('pending-count').textContent = data.pending_emergencies || 0;
+            const activeElem = document.getElementById('active-count');
+            const pendingElem = document.getElementById('pending-count');
+            if (activeElem) activeElem.textContent = data.active_ambulances || 0;
+            if (pendingElem) pendingElem.textContent = data.pending_emergencies || 0;
         }
     })
     .catch(error => {
         console.error('Error updating system status:', error);
     });
+}
+
+function closeMissionModal() {
+    console.log("🚪 Closing mission completion modal...");
+    document.getElementById('mission-complete-modal').style.display = 'none';
+    // Ensure the dashboard is reset to available state
+    document.getElementById('status-indicator').textContent = 'Available';
+    document.getElementById('status-indicator').className = 'status-indicator status-available';
+    document.getElementById('your-status').textContent = 'Available';
+    
+    // Clear any remaining markers just in case
+    if (patientMarker) map.removeLayer(patientMarker);
+    if (hospitalMarker) map.removeLayer(hospitalMarker);
+    patientMarker = null;
+    hospitalMarker = null;
+    
+    // Resume polling for new emergencies
+    startEmergencyPolling();
 }
 
 function centerOnAmbulance() {
