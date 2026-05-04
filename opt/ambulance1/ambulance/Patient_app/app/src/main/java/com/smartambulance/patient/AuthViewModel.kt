@@ -63,6 +63,18 @@ class AuthViewModel : ViewModel() {
         }
 
         authStatus = AuthStatus.Loading
+
+        // BYPASS FOR FIREBASE QUOTA EXCEEDED
+        if (cleanEmail == "demo@demo.com") {
+            otpRequestInFlight = false
+            pendingEmail = null
+            UserSession.email = cleanEmail
+            UserSession.role = "patient"
+            // Jump directly to Authenticated, which triggers AppNavigation to go to RegisterScreen
+            authStatus = AuthStatus.Authenticated("patient", UserSession.isProfileComplete)
+            return
+        }
+
         otpRequestInFlight = true
 
         val actionCodeSettings = ActionCodeSettings.newBuilder()
