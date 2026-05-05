@@ -54,9 +54,10 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.launch
 
-val DeepPurple = Color(0xFF6200EE)
-val ResQGRed = Color(0xFFFF4D4D)
-val LightBlue = Color(0xFFEBF0FE)
+val CoralRed = Color(0xFFFF4D6D)
+val LightBg = Color(0xFFF8F9FA)
+val DarkGrey = Color(0xFF333333)
+val ResQGRed = CoralRed
 
 class MainActivity : ComponentActivity() {
 
@@ -110,8 +111,8 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun AppTheme(content: @Composable () -> Unit) {
-    val RedPrimary = Color(0xFFFF4D4D)
-    val LightGray = Color(0xFFF0F2F5)
+    val RedPrimary = CoralRed
+    val LightGray = LightBg
     
     val colorScheme = lightColorScheme(
         primary = RedPrimary,
@@ -119,7 +120,7 @@ fun AppTheme(content: @Composable () -> Unit) {
         background = LightGray,
         surface = Color.White,
         onPrimary = Color.White,
-        onBackground = Color.Black
+        onBackground = DarkGrey
     )
     
     MaterialTheme(
@@ -268,12 +269,12 @@ fun SplashScreen(navController: NavController, viewModel: AuthViewModel) {
     }
     
     Box(
-        modifier = Modifier.fillMaxSize().background(DeepPurple),
+        modifier = Modifier.fillMaxSize().background(CoralRed),
         contentAlignment = Alignment.Center
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("ResQG", fontSize = 64.sp, fontWeight = FontWeight.ExtraBold, color = ResQGRed, fontFamily = FontFamily.Serif)
-            Text("Patient App", color = Color.White, fontSize = 20.sp)
+            Text("ResQG", fontSize = 64.sp, fontWeight = FontWeight.ExtraBold, color = Color.White, fontFamily = FontFamily.Serif)
+            Text("Patient App", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Medium)
             Spacer(modifier = Modifier.height(24.dp))
             CircularProgressIndicator(color = Color.White)
         }
@@ -320,7 +321,7 @@ class WebAppInterface(private val mContext: Context) {
 @Composable
 fun RoleSelectionScreen(navController: NavController) {
     Column(
-        modifier = Modifier.fillMaxSize().background(DeepPurple).padding(24.dp),
+        modifier = Modifier.fillMaxSize().background(LightBg).padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -350,7 +351,7 @@ fun RoleSelectionScreen(navController: NavController) {
             colors = ButtonDefaults.buttonColors(containerColor = Color.White),
             shape = RoundedCornerShape(12.dp)
         ) {
-            Text("AMBULANCE DRIVER", color = DeepPurple, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+            Text("AMBULANCE DRIVER", color = CoralRed, fontSize = 20.sp, fontWeight = FontWeight.Bold)
         }
     }
 }
@@ -362,7 +363,7 @@ fun RoleSelectionScreen(navController: NavController) {
 @Composable
 fun LanguageScreen(navController: NavController) {
     Column(
-        modifier = Modifier.fillMaxSize().background(DeepPurple).padding(24.dp),
+        modifier = Modifier.fillMaxSize().background(LightBg).padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -383,7 +384,7 @@ fun LanguageScreen(navController: NavController) {
                 colors = ButtonDefaults.buttonColors(containerColor = Color.White),
                 shape = RoundedCornerShape(12.dp)
             ) {
-                Text(lang.second, color = DeepPurple, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                Text(lang.second, color = CoralRed, fontSize = 18.sp, fontWeight = FontWeight.Bold)
             }
         }
         Spacer(modifier = Modifier.height(24.dp))
@@ -406,11 +407,11 @@ fun EmailScreen(navController: NavController, viewModel: AuthViewModel) {
     }
 
     Column(
-        modifier = Modifier.fillMaxSize().background(DeepPurple).padding(24.dp),
+        modifier = Modifier.fillMaxSize().background(LightBg).padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Text("Enter Email", fontSize = 26.sp, fontWeight = FontWeight.Bold, color = Color.White, textAlign = TextAlign.Center)
+        Text("Enter Email", fontSize = 26.sp, fontWeight = FontWeight.ExtraBold, color = CoralRed, textAlign = TextAlign.Center)
         Spacer(modifier = Modifier.height(32.dp))
 
         Card(
@@ -452,7 +453,7 @@ fun EmailScreen(navController: NavController, viewModel: AuthViewModel) {
                         }
                     },
                     modifier = Modifier.fillMaxWidth().height(50.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = DeepPurple),
+                    colors = ButtonDefaults.buttonColors(containerColor = CoralRed),
                     enabled = status !is AuthStatus.Loading && email.isNotBlank()
                 ) {
                     if (status is AuthStatus.Loading) {
@@ -498,11 +499,11 @@ fun OtpScreen(navController: NavController, email: String, viewModel: AuthViewMo
     }
 
     Column(
-        modifier = Modifier.fillMaxSize().background(DeepPurple).padding(24.dp),
+        modifier = Modifier.fillMaxSize().background(LightBg).padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Text("Check Your Email", fontSize = 26.sp, fontWeight = FontWeight.Bold, color = Color.White)
+        Text("Check Your Email", fontSize = 26.sp, fontWeight = FontWeight.ExtraBold, color = CoralRed)
         Spacer(modifier = Modifier.height(16.dp))
 
         Card(
@@ -549,7 +550,7 @@ fun RegisterScreen(navController: NavController, email: String) {
     var phone by remember { mutableStateOf("") }
 
     Column(
-        modifier = Modifier.fillMaxSize().background(DeepPurple).padding(24.dp),
+        modifier = Modifier.fillMaxSize().background(LightBg).padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -596,7 +597,7 @@ fun RegisterScreen(navController: NavController, email: String) {
                         }
                     },
                     modifier = Modifier.fillMaxWidth().height(50.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = DeepPurple)
+                    colors = ButtonDefaults.buttonColors(containerColor = CoralRed)
                 ) {
                     Text(t("SAVE & CONTINUE", "सहेजें और आगे बढ़ें", "ಉಳಿಸಿ ಮತ್ತು ಮುಂದುವರಿಯಿರಿ"), color = Color.White, fontWeight = FontWeight.Bold)
                 }
@@ -611,7 +612,7 @@ fun LoginScreen(navController: NavController) {
     var password by remember { mutableStateOf("") }
     
     Column(
-        modifier = Modifier.fillMaxSize().background(DeepPurple).padding(24.dp),
+        modifier = Modifier.fillMaxSize().background(LightBg).padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -644,7 +645,7 @@ fun LoginScreen(navController: NavController) {
                         }
                     },
                     modifier = Modifier.fillMaxWidth().height(50.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = DeepPurple)
+                    colors = ButtonDefaults.buttonColors(containerColor = CoralRed)
                 ) {
                     Text(t("SECURE LOGIN", "सुरक्षित लॉगिन", "ಸುರಕ್ಷಿತ ಲಾಗಿನ್"), color = Color.White, fontWeight = FontWeight.Bold)
                 }
@@ -872,7 +873,7 @@ fun HomeScreen(navController: NavController, activity: MainActivity) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Card(shape = RoundedCornerShape(20.dp), colors = CardDefaults.cardColors(containerColor = Color.White), elevation = CardDefaults.cardElevation(8.dp)) {
-                Text(t("Welcome, ${UserSession.username}", "स्वागत है, ${UserSession.username}", "ಸ್ವಾಗತ, ${UserSession.username}"), modifier = Modifier.padding(vertical = 8.dp, horizontal = 16.dp), fontWeight = FontWeight.Bold, color = DeepPurple)
+                Text(t("Welcome, ${UserSession.username}", "स्वागत है, ${UserSession.username}", "ಸ್ವಾಗತ, ${UserSession.username}"), modifier = Modifier.padding(vertical = 8.dp, horizontal = 16.dp), fontWeight = FontWeight.ExtraBold, color = CoralRed)
             }
             Button(
                 onClick = {
@@ -956,12 +957,12 @@ fun HomeScreen(navController: NavController, activity: MainActivity) {
         if (showDialog) {
             AlertDialog(
                 onDismissRequest = { showDialog = false },
-                title = { Text(t("Confirm Emergency", "आपातकाल की पुष्टि करें", "ತುರ್ತು ಪರಿಸ್ಥಿತಿಯನ್ನು ದೃಢೀಕರಿಸಿ"), fontWeight = FontWeight.Bold, color = DeepPurple) },
+                title = { Text(t("Confirm Emergency", "आपातकाल की पुष्टि करें", "ತುರ್ತು ಪರಿಸ್ಥಿತಿಯನ್ನು ದೃಢೀಕರಿಸಿ"), fontWeight = FontWeight.Bold, color = CoralRed) },
                 text = { Text(t("Are you sure you want an ambulance here immediately?", "क्या आप निश्चित रूप से तुरंत एम्बुलेंस बुलाना चाहते हैं?", "ನಿಮ್ಮ ಪ್ರಸ್ತುತ ಸ್ಥಳಕ್ಕೆ ತಕ್ಷಣವೇ ಆಂಬ್ಯುಲೆನ್ಸ್ ವಿನಂತಿಸಲು ನೀವು ಖಚಿತವಾಗಿ ಬಯಸುವಿರಾ?")) },
                 containerColor = Color.White,
                 confirmButton = {
                     Button(
-                        colors = ButtonDefaults.buttonColors(containerColor = DeepPurple),
+                        colors = ButtonDefaults.buttonColors(containerColor = CoralRed),
                         onClick = {
                             showDialog = false
                             loading = true
@@ -1376,7 +1377,7 @@ fun DriverLoginScreen(navController: NavController) {
     var errorMsg by remember { mutableStateOf("") }
     
     Column(
-        modifier = Modifier.fillMaxSize().background(DeepPurple).padding(24.dp),
+        modifier = Modifier.fillMaxSize().background(LightBg).padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -1439,7 +1440,7 @@ fun DriverRegisterScreen(navController: NavController) {
     var info by remember { mutableStateOf("") }
 
     Column(
-        modifier = Modifier.fillMaxSize().background(DeepPurple).padding(24.dp),
+        modifier = Modifier.fillMaxSize().background(LightBg).padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {

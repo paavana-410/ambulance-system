@@ -89,8 +89,8 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun AppTheme(content: @Composable () -> Unit) {
-    val RedPrimary = Color(0xFFFF4D4D)
-    val LightGray = Color(0xFFF0F2F5)
+    val RedPrimary = CoralRed
+    val LightGray = LightBg
     
     val colorScheme = lightColorScheme(
         primary = RedPrimary,
@@ -98,7 +98,7 @@ fun AppTheme(content: @Composable () -> Unit) {
         background = LightGray,
         surface = Color.White,
         onPrimary = Color.White,
-        onBackground = Color.Black
+        onBackground = DarkGrey
     )
     
     MaterialTheme(
@@ -177,9 +177,10 @@ fun t(en: String, hi: String, kn: String): String {
     }
 }
 
-val DeepPurple = Color(0xFF30336B)
-val LightBlue = Color(0xFFEBF0FE)
-val ResQGRed = Color(0xFFD32F2F)
+val CoralRed = Color(0xFFFF4D6D)
+val LightBg = Color(0xFFF8F9FA)
+val DarkGrey = Color(0xFF333333)
+val ResQGRed = CoralRed
 
 @Composable
     val authViewModel: AuthViewModel = viewModel()
@@ -253,11 +254,11 @@ fun SplashScreen(navController: NavController, viewModel: AuthViewModel) {
     }
     
     Box(
-        modifier = Modifier.fillMaxSize().background(DeepPurple),
+        modifier = Modifier.fillMaxSize().background(CoralRed),
         contentAlignment = Alignment.Center
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("ResQG", fontSize = 64.sp, fontWeight = FontWeight.ExtraBold, color = ResQGRed, fontFamily = FontFamily.Serif)
+            Text("ResQG", fontSize = 64.sp, fontWeight = FontWeight.ExtraBold, color = Color.White, fontFamily = FontFamily.Serif)
             Text("Smart Emergency System", color = Color.White, fontSize = 16.sp)
             Spacer(modifier = Modifier.height(24.dp))
             CircularProgressIndicator(color = Color.White)
@@ -268,11 +269,11 @@ fun SplashScreen(navController: NavController, viewModel: AuthViewModel) {
 @Composable
 fun RoleSelectionScreen(navController: NavController) {
     Column(
-        modifier = Modifier.fillMaxSize().background(DeepPurple).padding(24.dp),
+        modifier = Modifier.fillMaxSize().background(LightBg).padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Text("I am a...", fontSize = 32.sp, fontWeight = FontWeight.Bold, color = Color.White)
+        Text("I am a...", fontSize = 32.sp, fontWeight = FontWeight.Bold, color = ResQGRed)
         Spacer(modifier = Modifier.height(40.dp))
         
         Button(
@@ -298,7 +299,7 @@ fun RoleSelectionScreen(navController: NavController) {
             colors = ButtonDefaults.buttonColors(containerColor = Color.White),
             shape = RoundedCornerShape(12.dp)
         ) {
-            Text("AMBULANCE DRIVER", color = DeepPurple, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+            Text("AMBULANCE DRIVER", color = ResQGRed, fontSize = 20.sp, fontWeight = FontWeight.Bold)
         }
     }
 }
@@ -310,11 +311,11 @@ fun RoleSelectionScreen(navController: NavController) {
 @Composable
 fun LanguageScreen(navController: NavController) {
     Column(
-        modifier = Modifier.fillMaxSize().background(DeepPurple).padding(24.dp),
+        modifier = Modifier.fillMaxSize().background(LightBg).padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Text("Choose Language", fontSize = 28.sp, fontWeight = FontWeight.Bold, color = Color.White)
+        Text("Choose Language", fontSize = 28.sp, fontWeight = FontWeight.Bold, color = ResQGRed)
         Spacer(modifier = Modifier.height(40.dp))
         
         listOf(
@@ -331,12 +332,12 @@ fun LanguageScreen(navController: NavController) {
                 colors = ButtonDefaults.buttonColors(containerColor = Color.White),
                 shape = RoundedCornerShape(12.dp)
             ) {
-                Text(lang.second, color = DeepPurple, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                Text(lang.second, color = ResQGRed, fontSize = 18.sp, fontWeight = FontWeight.Bold)
             }
         }
         Spacer(modifier = Modifier.height(24.dp))
         TextButton(onClick = { navController.navigate("login") }) {
-            Text("Already an existing user? Login here", color = Color.White)
+            Text("Already an existing user? Login here", color = ResQGRed)
         }
         TextButton(onClick = { navController.navigate("role_selection") { popUpTo("role_selection") { inclusive = true } } }) {
             Text("Back to Role Selection", color = Color.Gray)
@@ -357,11 +358,11 @@ fun EmailScreen(navController: NavController, viewModel: AuthViewModel) {
     }
 
     Column(
-        modifier = Modifier.fillMaxSize().background(DeepPurple).padding(24.dp),
+        modifier = Modifier.fillMaxSize().background(LightBg).padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Text("Enter Email", fontSize = 26.sp, fontWeight = FontWeight.Bold, color = Color.White, textAlign = TextAlign.Center)
+        Text("Enter Email", fontSize = 26.sp, fontWeight = FontWeight.Bold, color = ResQGRed, textAlign = TextAlign.Center)
         Spacer(modifier = Modifier.height(32.dp))
 
         Card(
@@ -403,7 +404,7 @@ fun EmailScreen(navController: NavController, viewModel: AuthViewModel) {
                         }
                     },
                     modifier = Modifier.fillMaxWidth().height(50.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = DeepPurple),
+                    colors = ButtonDefaults.buttonColors(containerColor = CoralRed),
                     enabled = status !is AuthStatus.Loading && email.isNotBlank()
                 ) {
                     if (status is AuthStatus.Loading) {
@@ -430,11 +431,11 @@ fun OtpScreen(navController: NavController, email: String, viewModel: AuthViewMo
     }
 
     Column(
-        modifier = Modifier.fillMaxSize().background(DeepPurple).padding(24.dp),
+        modifier = Modifier.fillMaxSize().background(LightBg).padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Text("Verify Email", fontSize = 26.sp, fontWeight = FontWeight.Bold, color = Color.White)
+        Text("Verify Email", fontSize = 26.sp, fontWeight = FontWeight.ExtraBold, color = ResQGRed)
         Spacer(modifier = Modifier.height(16.dp))
 
         Card(
@@ -465,7 +466,7 @@ fun OtpScreen(navController: NavController, email: String, viewModel: AuthViewMo
                 Button(
                     onClick = { if (otp.length == 6) viewModel.verifyOtp(otp) },
                     modifier = Modifier.fillMaxWidth().height(50.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = DeepPurple),
+                    colors = ButtonDefaults.buttonColors(containerColor = ResQGRed),
                     enabled = status !is AuthStatus.Loading && otp.length == 6
                 ) {
                     if (status is AuthStatus.Loading) {
@@ -483,7 +484,7 @@ fun OtpScreen(navController: NavController, email: String, viewModel: AuthViewMo
                         onClick = { viewModel.sendEmailOtp(email) },
                         enabled = status !is AuthStatus.Loading
                     ) {
-                        Text("Resend OTP", color = DeepPurple, fontWeight = FontWeight.Bold)
+                        Text("Resend OTP", color = ResQGRed, fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -500,11 +501,11 @@ fun RegisterScreen(navController: NavController, email: String) {
     var loading by remember { mutableStateOf(false) }
 
     Column(
-        modifier = Modifier.fillMaxSize().background(DeepPurple).padding(24.dp),
+        modifier = Modifier.fillMaxSize().background(LightBg).padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Text(t("Complete Profile", "प्रोफाइल पूरी करें", "ಪ್ರೊಫೈಲ್ ಪೂರ್ಣಗೊಳಿಸಿ"), fontSize = 26.sp, fontWeight = FontWeight.Bold, color = Color.White)
+        Text(t("Complete Profile", "प्रोफाइल पूरी करें", "ಪ್ರೊಫೈಲ್ ಪೂರ್ಣಗೊಳಿಸಿ"), fontSize = 26.sp, fontWeight = FontWeight.Bold, color = ResQGRed)
         Spacer(modifier = Modifier.height(32.dp))
         
         Card(
@@ -538,7 +539,7 @@ fun RegisterScreen(navController: NavController, email: String) {
                         }
                     },
                     modifier = Modifier.fillMaxWidth().height(50.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = DeepPurple),
+                    colors = ButtonDefaults.buttonColors(containerColor = ResQGRed),
                     enabled = !loading
                 ) {
                     if (loading) CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
@@ -555,7 +556,7 @@ fun LoginScreen(navController: NavController) {
     var password by remember { mutableStateOf("") }
     
     Column(
-        modifier = Modifier.fillMaxSize().background(DeepPurple).padding(24.dp),
+        modifier = Modifier.fillMaxSize().background(LightBg).padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -588,7 +589,7 @@ fun LoginScreen(navController: NavController) {
                         }
                     },
                     modifier = Modifier.fillMaxWidth().height(50.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = DeepPurple)
+                    colors = ButtonDefaults.buttonColors(containerColor = ResQGRed)
                 ) {
                     Text(t("SECURE LOGIN", "सुरक्षित लॉगिन", "ಸುರಕ್ಷಿತ ಲಾಗಿನ್"), color = Color.White, fontWeight = FontWeight.Bold)
                 }
@@ -671,7 +672,7 @@ fun HomeScreen(navController: NavController, activity: MainActivity, viewModel: 
             verticalAlignment = Alignment.CenterVertically
         ) {
             Card(shape = RoundedCornerShape(20.dp), colors = CardDefaults.cardColors(containerColor = Color.White), elevation = CardDefaults.cardElevation(8.dp)) {
-                Text(t("Welcome, ${UserSession.firstName}", "स्वागत है, ${UserSession.firstName}", "ಸ್ವಾಗತ, ${UserSession.firstName}"), modifier = Modifier.padding(vertical = 8.dp, horizontal = 16.dp), fontWeight = FontWeight.Bold, color = DeepPurple)
+                Text(t("Welcome, ${UserSession.firstName}", "स्वागत है, ${UserSession.firstName}", "ಸ್ವಾಗತ, ${UserSession.firstName}"), modifier = Modifier.padding(vertical = 8.dp, horizontal = 16.dp), fontWeight = FontWeight.Bold, color = ResQGRed)
             }
             Button(
                 onClick = {
@@ -730,12 +731,12 @@ fun HomeScreen(navController: NavController, activity: MainActivity, viewModel: 
         if (showDialog) {
             AlertDialog(
                 onDismissRequest = { showDialog = false },
-                title = { Text(t("Confirm Emergency", "आपातकाल की पुष्टि करें", "ತುರ್ತು ಪರಿಸ್ಥಿತಿಯನ್ನು ದೃಢೀಕರಿಸಿ"), fontWeight = FontWeight.Bold, color = DeepPurple) },
+                title = { Text(t("Confirm Emergency", "आपातकाल की पुष्टि करें", "ತುರ್ತು ಪರಿಸ್ಥಿತಿಯನ್ನು ದೃಢೀಕರಿಸಿ"), fontWeight = FontWeight.Bold, color = ResQGRed) },
                 text = { Text(t("Are you sure you want an ambulance here immediately?", "क्या आप निश्चित रूप से तुरंत एम्बुलेंस बुलाना चाहते हैं?", "ನಿಮ್ಮ ಪ್ರಸ್ತುತ ಸ್ಥಳಕ್ಕೆ ತಕ್ಷಣವೇ ಆಂಬ್ಯುಲೆನ್ಸ್ ವಿನಂತಿಸಲು ನೀವು ಖಚಿತವಾಗಿ ಬಯಸುವಿರಾ?")) },
                 containerColor = Color.White,
                 confirmButton = {
                     Button(
-                        colors = ButtonDefaults.buttonColors(containerColor = DeepPurple),
+                        colors = ButtonDefaults.buttonColors(containerColor = ResQGRed),
                         onClick = {
                             showDialog = false
                             loading = true
@@ -832,7 +833,7 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize().background(LightBlue)) {
+    Box(modifier = Modifier.fillMaxSize().background(Color.White)) {
         AndroidView(
             factory = { context ->
                 WebView(context).apply {
@@ -928,7 +929,7 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
                                                     routeWhileDragging: false,
                                                     show: false,
                                                     addWaypoints: false,
-                                                    lineOptions: { styles: [{ color: '#d32f2f', opacity: 0.8, weight: 6 }] }
+                                                    lineOptions: { styles: [{ color: '#FF4D6D', opacity: 0.8, weight: 6 }] }
                                                 }).addTo(map);
                                             } else {
                                                 routingControl.setWaypoints(waypoints);
@@ -975,7 +976,7 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
                 if(emergencyState == "completed") {
                     Text("✅ Ride Completed", fontWeight = FontWeight.ExtraBold, fontSize = 24.sp, color = Color(0xFF155724))
                     Spacer(modifier = Modifier.height(16.dp))
-                    Text("Total Fare: ₹$fare", fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, color = DeepPurple)
+                    Text("Total Fare: ₹$fare", fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, color = ResQGRed)
                     Spacer(modifier = Modifier.height(20.dp))
 
                     if (isAutoPayPending) {
@@ -1007,7 +1008,7 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
                                 }
                             },
                             modifier = Modifier.fillMaxWidth().height(58.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF5B3EB6)),
+                            colors = ButtonDefaults.buttonColors(containerColor = ResQGRed),
                             shape = RoundedCornerShape(14.dp)
                         ) {
                             Text("PAY NOW via PhonePe", color = Color.White, fontWeight = FontWeight.Bold)
@@ -1034,7 +1035,7 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
                         emergencyState == "active" -> t("Heading to hospital", "अस्पताल की ओर", "ಆಸ್ಪತ್ರೆಯತ್ತ")
                         else -> t("Please wait...", "कृपया प्रतीक्षा करें...", "ದಯವಿಟ್ಟು ಕಾಯಿರಿ...")
                     }
-                    Text(msg, fontWeight = FontWeight.Bold, fontSize = 20.sp, textAlign = TextAlign.Center, color = DeepPurple)
+                    Text(msg, fontWeight = FontWeight.Bold, fontSize = 20.sp, textAlign = TextAlign.Center, color = ResQGRed)
                     
                     if (emergencyState != "pending" && driverName != "-") {
                         Spacer(modifier = Modifier.height(12.dp))
@@ -1080,15 +1081,15 @@ fun DriverProfileScreen(navController: NavController) {
     var info by remember { mutableStateOf("") }
 
     Column(
-        modifier = Modifier.fillMaxSize().background(DeepPurple).padding(24.dp),
+        modifier = Modifier.fillMaxSize().background(LightBg).padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Text("Driver Profile", fontSize = 26.sp, fontWeight = FontWeight.Bold, color = Color.White)
+        Text("Driver Profile", fontSize = 26.sp, fontWeight = FontWeight.Bold, color = ResQGRed)
         Spacer(modifier = Modifier.height(16.dp))
         
         if (info.isNotBlank()) {
-            Text(info, color = Color.Yellow, modifier = Modifier.padding(bottom = 16.dp))
+            Text(info, color = ResQGRed, modifier = Modifier.padding(bottom = 16.dp))
         }
 
         Card(
@@ -1212,7 +1213,8 @@ fun DriverHomeScreen(navController: NavController, activity: MainActivity) {
                                             routingControl = L.Routing.control({
                                                 waypoints: [L.latLng(dLat, dLon), L.latLng(pLat, pLon)],
                                                 show: false,
-                                                addWaypoints: false
+                                                addWaypoints: false,
+                                                lineOptions: { styles: [{ color: '#FF4D6D', opacity: 0.8, weight: 6 }] }
                                             }).addTo(map);
                                             map.setView([dLat, dLon], 14);
                                         } else {
@@ -1249,7 +1251,7 @@ fun DriverHomeScreen(navController: NavController, activity: MainActivity) {
         // Top Actions
         Row(modifier = Modifier.fillMaxWidth().padding(16.dp).align(Alignment.TopCenter), horizontalArrangement = Arrangement.SpaceBetween) {
             Card(shape = RoundedCornerShape(12.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
-                Text(if(isAccepted) "ON MISSION" else "AVAILABLE", modifier = Modifier.padding(12.dp), color = DeepPurple, fontWeight = FontWeight.Bold)
+                Text(if(isAccepted) "ON MISSION" else "AVAILABLE", modifier = Modifier.padding(12.dp), color = ResQGRed, fontWeight = FontWeight.Bold)
             }
             Button(
                 onClick = {
@@ -1314,7 +1316,7 @@ fun DriverHomeScreen(navController: NavController, activity: MainActivity) {
                 elevation = CardDefaults.cardElevation(15.dp)
             ) {
                 Column(modifier = Modifier.padding(20.dp)) {
-                    Text("Navigating to Patient", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = DeepPurple)
+                    Text("Navigating to Patient", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = ResQGRed)
                     Spacer(modifier = Modifier.height(8.dp))
                     Text("Patient: ${currentEmergency?.patient_name} (${currentEmergency?.patient_mobile})")
                     Button(

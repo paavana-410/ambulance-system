@@ -20,7 +20,7 @@ font-family:'Segoe UI',sans-serif;
 /* BACKGROUND */
 
 body{
-background:linear-gradient(135deg,#5f7cff,#7f6bff);
+background:#f8f9fa;
 height:100vh;
 display:flex;
 justify-content:center;
@@ -34,9 +34,9 @@ overflow:hidden;
 width:950px;
 height:520px;
 display:flex;
-border-radius:20px;
+border-radius:24px;
 overflow:hidden;
-box-shadow:0 30px 60px rgba(0,0,0,0.25);
+box-shadow:0 20px 50px rgba(0,0,0,0.1);
 background:white;
 }
 
@@ -44,7 +44,7 @@ background:white;
 
 .login-left{
 flex:1;
-background:linear-gradient(140deg,#5f7cff,#4c5cff);
+background:#ff4d6d;
 display:flex;
 flex-direction:column;
 justify-content:center;
@@ -56,16 +56,19 @@ padding:40px;
 
 .login-left h1{
 font-size:48px;
+font-weight: 800;
 margin-top:10px;
+letter-spacing: -1px;
 }
 
 .login-left p{
 opacity:0.9;
 margin-top:10px;
+font-weight: 500;
 }
 
 .login-icon{
-font-size:70px;
+font-size:80px;
 animation:float 3s ease-in-out infinite;
 }
 
@@ -83,13 +86,14 @@ display:flex;
 flex-direction:column;
 justify-content:center;
 padding:60px;
-background:#fafbff;
+background:white;
 }
 
 .login-right h2{
 margin-bottom:25px;
 color:#333;
 font-size:28px;
+font-weight: 700;
 }
 
 /* INPUT */
@@ -101,16 +105,18 @@ margin-bottom:18px;
 .form-group input{
 width:100%;
 padding:14px;
-border-radius:10px;
-border:1px solid #ddd;
+border-radius:12px;
+border:1.5px solid #eee;
+background: #fcfcfc;
 font-size:14px;
-transition:0.2s;
+transition:0.3s;
 }
 
 .form-group input:focus{
 outline:none;
-border-color:#5f7cff;
-box-shadow:0 0 0 3px rgba(95,124,255,0.15);
+border-color:#ff4d6d;
+background: white;
+box-shadow:0 0 0 4px rgba(255,77,109,0.1);
 }
 
 /* BUTTON */
@@ -119,31 +125,33 @@ box-shadow:0 0 0 3px rgba(95,124,255,0.15);
 width:100%;
 padding:14px;
 border:none;
-border-radius:10px;
-background:linear-gradient(120deg,#5f7cff,#6f63ff);
+border-radius:12px;
+background:#ff4d6d;
 color:white;
 font-size:16px;
-font-weight:600;
+font-weight:700;
 cursor:pointer;
-transition:0.2s;
+transition:0.3s;
+box-shadow: 0 4px 15px rgba(255,77,109,0.3);
 }
 
 .login-btn:hover{
 transform:translateY(-2px);
-box-shadow:0 10px 20px rgba(95,124,255,0.4);
+box-shadow:0 8px 20px rgba(255,77,109,0.4);
+background: #ff3355;
 }
 
 /* DASHBOARD */
 
 .container{
-width:95%;
-height:92vh;
-background:white;
-border-radius:18px;
+width:98%;
+height:96vh;
+background:#f8f9fa;
+border-radius:24px;
 overflow:hidden;
 display:flex;
 flex-direction:column;
-box-shadow:0 25px 40px rgba(0,0,0,0.25);
+box-shadow:0 15px 40px rgba(0,0,0,0.08);
 }
 
 /* HEADER */
@@ -152,25 +160,37 @@ box-shadow:0 25px 40px rgba(0,0,0,0.25);
 display:flex;
 justify-content:space-between;
 align-items:center;
-padding:14px 24px;
-border-bottom:1px solid #eee;
-background:#5f7cff;
-color:white;
+padding:16px 32px;
+background:white;
+color:#333;
+border-bottom: 1px solid #eee;
+}
+
+.app-header h2 {
+    font-weight: 800;
+    color: #ff4d6d;
 }
 
 .driver-info{
 display:flex;
-gap:12px;
+gap:16px;
 align-items:center;
 }
 
 .logout-btn{
-background:#ff4d4d;
+background:#f5f5f5;
 border:none;
-color:white;
-padding:6px 12px;
-border-radius:6px;
+color:#666;
+padding:8px 16px;
+border-radius:10px;
 cursor:pointer;
+font-weight: 600;
+transition: 0.2s;
+}
+
+.logout-btn:hover {
+    background: #ff4d6d;
+    color: white;
 }
 
 /* CONTENT */
@@ -178,81 +198,104 @@ cursor:pointer;
 .app-content{
 display:flex;
 flex:1;
+padding: 12px;
+gap: 12px;
 }
 
 /* SIDEBAR */
 
 .sidebar{
-width:280px;
-background:#f5f6ff;
-padding:18px;
+width:320px;
+padding:0;
 overflow:auto;
-border-right:1px solid #eee;
+display: flex;
+flex-direction: column;
+gap: 12px;
 }
 
 .status-card,
 .system-status{
 background:white;
-padding:14px;
-border-radius:10px;
-margin-bottom:15px;
-box-shadow:0 2px 6px rgba(0,0,0,0.08);
+padding:20px;
+border-radius:18px;
+box-shadow:0 4px 12px rgba(0,0,0,0.03);
+border: 1px solid #f0f0f0;
+}
+
+.status-header h3 {
+    font-size: 16px;
+    font-weight: 700;
+    color: #333;
 }
 
 .status-header{
 display:flex;
 justify-content:space-between;
 align-items:center;
-margin-bottom:10px;
+margin-bottom:15px;
 }
 
 .status-indicator{
-padding:4px 8px;
-border-radius:14px;
+padding:6px 12px;
+border-radius:12px;
 font-size:12px;
-font-weight:600;
+font-weight:700;
+text-transform: uppercase;
 }
 
 .status-available{
-background:#e8f5e9;
-color:#2e7d32;
+background:#e8fdf5;
+color:#10b981;
 }
 
 .status-busy{
-background:#ffebee;
-color:#c62828;
+background:#fff1f2;
+color:#f43f5e;
 }
 
 .status-info p{
-font-size:13px;
-margin-top:6px;
+font-size:14px;
+margin-top:8px;
 display:flex;
 justify-content:space-between;
+color: #555;
+}
+
+.status-info p span {
+    font-weight: 600;
+    color: #333;
 }
 
 .status-grid{
 display:grid;
 grid-template-columns:1fr 1fr;
-gap:10px;
-margin-top:10px;
+gap:12px;
+margin-top:15px;
 }
 
 .status-item{
-background:#eef1ff;
-padding:10px;
+background:#f8f9fa;
+padding:12px;
 text-align:center;
-border-radius:6px;
+border-radius:12px;
+border: 1px solid #f0f0f0;
 }
 
 .status-count{
-font-size:18px;
-font-weight:bold;
+font-size:22px;
+font-weight:800;
+color: #ff4d6d;
 }
 
 /* MAP */
 
 .map-container{
 flex:1;
+border-radius: 20px;
+overflow: hidden;
+box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+border: 1px solid #f0f0f0;
+background: white;
 }
 
 #map{
@@ -269,83 +312,117 @@ top:0;
 left:0;
 width:100%;
 height:100%;
-background:rgba(0,0,0,0.6);
+background:rgba(0,0,0,0.4);
+backdrop-filter: blur(8px);
 justify-content:center;
 align-items:center;
 z-index: 9999;
 }
 
-.hidden {
-    display: none !important;
-}
-
 .popup-content{
 background:white;
-width:350px;
-border-radius:10px;
+width:400px;
+border-radius:24px;
 overflow:hidden;
+box-shadow: 0 25px 60px rgba(0,0,0,0.2);
 }
 
 .popup-header{
-background:#ff4d4d;
+background:#ff4d6d;
 color:white;
-padding:16px;
+padding:24px;
 text-align:center;
 }
 
+.popup-header h2 {
+    font-weight: 800;
+    letter-spacing: -0.5px;
+}
+
+#emergency-timer {
+    background: rgba(255,255,255,0.2);
+    padding: 4px 12px;
+    border-radius: 8px;
+    margin-top: 8px;
+    display: inline-block;
+    font-weight: 800;
+}
+
 .popup-body{
-padding:18px;
+padding:30px;
+}
+
+.popup-body p {
+    margin-bottom: 12px;
+    font-size: 15px;
+    display: flex;
+    justify-content: space-between;
+}
+
+.popup-body p b {
+    color: #666;
 }
 
 .popup-actions{
 display:flex;
-gap:10px;
-margin-top:15px;
+gap:12px;
+margin-top:25px;
 }
 
 .accept-btn{
-flex:1;
-background:#2ecc71;
+flex:1.5;
+background:#10b981;
 border:none;
-padding:10px;
+padding:14px;
 color:white;
-border-radius:6px;
+border-radius:14px;
 cursor:pointer;
+font-weight: 700;
+font-size: 16px;
+box-shadow: 0 4px 12px rgba(16,185,129,0.3);
 }
 
 .decline-btn{
 flex:1;
-background:#ff4d4d;
+background:#f4f4f4;
 border:none;
-padding:10px;
-color:white;
-border-radius:6px;
+padding:14px;
+color:#666;
+border-radius:14px;
 cursor:pointer;
+font-weight: 600;
 }
 
 .hospital-item{
-    background: #f8f9fa;
+    background: #fcfcfc;
     border: 1px solid #eee;
-    padding: 10px;
+    padding: 12px;
     margin-bottom: 8px;
-    border-radius: 8px;
+    border-radius: 12px;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    transition: 0.2s;
+}
+
+.hospital-item:hover {
+    border-color: #ff4d6d;
 }
 
 .hospital-info{
-    font-size: 13px;
+    font-size: 14px;
+    font-weight: 600;
 }
 
 .select-hospital-btn{
-    background: #5f7cff;
+    background: #ff4d6d;
     color: white;
     border: none;
-    padding: 5px 10px;
-    border-radius: 4px;
+    padding: 6px 12px;
+    border-radius: 8px;
     cursor: pointer;
     font-size: 12px;
+    font-weight: 700;
 }
 
 
@@ -356,7 +433,8 @@ cursor:pointer;
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0,0,0,0.7);
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(8px);
     justify-content: center;
     align-items: center;
     z-index: 10000;
@@ -364,37 +442,41 @@ cursor:pointer;
 
 .modal-content {
     background: white;
-    padding: 30px;
-    border-radius: 15px;
+    padding: 40px;
+    border-radius: 28px;
     text-align: center;
-    width: 400px;
-    box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+    width: 420px;
+    box-shadow: 0 30px 70px rgba(0,0,0,0.15);
 }
 
 .fare-amount {
-    font-size: 36px;
-    font-weight: 800;
-    color: #2ecc71;
-    margin: 15px 0;
+    font-size: 42px;
+    font-weight: 900;
+    color: #10b981;
+    margin: 20px 0;
+    letter-spacing: -1px;
 }
 
 .qr-code-img {
-    width: 250px;
-    height: 250px;
+    width: 240px;
+    height: 240px;
     margin: 20px auto;
-    border: 1px solid #eee;
+    border: 2px solid #f8f9fa;
+    border-radius: 20px;
     padding: 10px;
 }
 
 .close-modal-btn {
-    background: #5f7cff;
+    background: #ff4d6d;
     color: white;
     border: none;
-    padding: 12px 30px;
-    border-radius: 8px;
+    padding: 14px 40px;
+    border-radius: 14px;
     cursor: pointer;
-    font-weight: bold;
-    margin-top: 15px;
+    font-weight: 800;
+    margin-top: 20px;
+    width: 100%;
+    box-shadow: 0 4px 15px rgba(255,77,109,0.3);
 }
 </style>
 </head>
@@ -562,14 +644,14 @@ style="margin-top:8px;width:100%;padding:12px;background:#2ecc71;color:white;bor
 </div>
 </div>
 
-    <div id="fintech-dashboard" class="status-card" style="margin-top:15px; border-top: 3px solid #2ecc71;">
-        <h3 style="color: #2ecc71;">💳 Fintech Dashboard</h3>
+    <div id="fintech-dashboard" class="status-card" style="margin-top:15px; border-top: 4px solid #10b981;">
+        <h3 style="color: #10b981; font-weight: 800;">💳 Fintech Dashboard</h3>
         <div class="status-info">
-            <p style="font-size: 12px; color: #666; margin-bottom: 8px;">UPI AutoPay Status</p>
-            <p style="display: flex; justify-content: space-between;">Pending Invoices: <span id="pending-invoices" style="font-weight: bold;">0</span></p>
-            <p style="display: flex; justify-content: space-between;">Overdue (3+ Days): <span id="overdue-payments" style="font-weight: bold; color: #ff4d4d;">0</span></p>
+            <p style="font-size: 12px; color: #888; margin-bottom: 8px;">UPI AutoPay Settlement</p>
+            <p>Pending Invoices: <span id="pending-invoices">0</span></p>
+            <p>Overdue (3+ Days): <span id="overdue-payments" style="color: #ff4d6d;">0</span></p>
             
-            <button onclick="simulateAutoPay()" class="login-btn" style="margin-top: 12px; background: #2ecc71; font-size: 13px;">
+            <button onclick="simulateAutoPay()" class="login-btn" style="margin-top: 15px; background: #10b981; box-shadow: 0 4px 12px rgba(16,185,129,0.2);">
                 ⚡ Run AutoPay Settlement
             </button>
         </div>
