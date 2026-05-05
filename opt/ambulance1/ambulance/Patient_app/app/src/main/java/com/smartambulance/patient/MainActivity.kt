@@ -1026,7 +1026,8 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
                     settings.loadWithOverviewMode = true
                     settings.useWideViewPort = true
                     settings.mixedContentMode = android.webkit.WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
-                    settings.userAgentString = "ResQGo/1.0 (Android; Student Project; contact@resqgo.app)"`n                    addJavascriptInterface(WebAppInterface(activity), "Android")
+                    settings.userAgentString = "ResQGo/1.0 (Android; Student Project; contact@resqgo.app)"
+                    addJavascriptInterface(WebAppInterface(activity), "Android")
                     
                     // Force the map to fill the space
                     setPadding(0,0,0,0)
