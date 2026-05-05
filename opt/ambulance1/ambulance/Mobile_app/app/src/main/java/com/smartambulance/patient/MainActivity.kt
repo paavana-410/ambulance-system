@@ -159,6 +159,14 @@ object UserSession {
     var isProfileComplete: Boolean
         get() = prefs.getBoolean("isProfileComplete", false)
         set(value) = prefs.edit().putBoolean("isProfileComplete", value).apply()
+
+    var isPendingPayment: Boolean
+        get() = prefs.getBoolean("isPendingPayment", false)
+        set(value) = prefs.edit().putBoolean("isPendingPayment", value).apply()
+
+    var lastFare: String
+        get() = prefs.getString("lastFare", "0.0") ?: "0.0"
+        set(value) = prefs.edit().putString("lastFare", value).apply()
 }
 
 fun t(en: String, hi: String, kn: String): String {
@@ -678,14 +686,44 @@ fun HomeScreen(navController: NavController, activity: MainActivity, viewModel: 
 
         // SOS Button
         Box(modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 60.dp)) {
-            Button(
-                onClick = { showDialog = true },
-                modifier = Modifier.size(120.dp),
-                shape = CircleShape,
-                colors = ButtonDefaults.buttonColors(containerColor = ResQGRed),
-                elevation = ButtonDefaults.buttonElevation(defaultElevation = 15.dp, pressedElevation = 5.dp)
-            ) {
-                Text(if (loading) t("...", "...", "...") else t("SOS", "SOS", "SOS"), fontSize = 32.sp, fontWeight = FontWeight.Black, textAlign = TextAlign.Center, color = Color.White)
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                if (UserSession.isPendingPayment) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(bottom = 16.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF3E0)),
+                        shape = RoundedCornerShape(12.dp),
+                        elevation = CardDefaults.cardElevation(4.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text("💳 Pending Payment Found", fontWeight = FontWeight.Bold, color = Color(0xFFE65100))
+                            Text("Amount: ₹${UserSession.lastFare}", fontSize = 18.sp, fontWeight = FontWeight.ExtraBold)
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Button(
+                                onClick = {
+                                    val upiUri = "upi://pay?pa=resqgo@upi&pn=ResQGo&am=${UserSession.lastFare}&cu=INR&tn=PendingRidePay&tr=TXID${System.currentTimeMillis()}"
+                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(upiUri))
+                                    try {
+                                        activity.startActivity(Intent.createChooser(intent, "Complete Payment"))
+                                        UserSession.isPendingPayment = false
+                                    } catch (e: Exception) {}
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE65100))
+                            ) {
+                                Text("PAY NOW", color = Color.White)
+                            }
+                        }
+                    }
+                }
+
+                Button(
+                    onClick = { showDialog = true },
+                    modifier = Modifier.size(120.dp),
+                    shape = CircleShape,
+                    colors = ButtonDefaults.buttonColors(containerColor = ResQGRed),
+                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 15.dp, pressedElevation = 5.dp)
+                ) {
+                    Text(if (loading) t("...", "...", "...") else t("SOS", "SOS", "SOS"), fontSize = 32.sp, fontWeight = FontWeight.Black, textAlign = TextAlign.Center, color = Color.White)
+                }
             }
         }
 
@@ -774,6 +812,8 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
                 }
             } catch (e: Exception) {}
             if (emergencyState == "completed") {
+                UserSession.isPendingPayment = true
+                UserSession.lastFare = String.format("%.2f", fare)
                 // Wait for user to pay
             }
             delay(3000)
@@ -956,13 +996,14 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
                     } else {
                         Button(
                             onClick = {
-                                val upiUri = "upi://pay?pa=resqgo@upi&pn=ResQGo&am=$fare&cu=INR&tn=ResQGoRide&tr=TXN${System.currentTimeMillis()}"
-                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(upiUri))
                                 try {
+                                    val formattedFare = String.format("%.2f", fare)
+                                    val upiUri = "upi://pay?pa=resqgo@upi&pn=ResQGo&am=$formattedFare&cu=INR&tn=ResQGoRide&tr=TXID${System.currentTimeMillis()}"
+                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(upiUri))
                                     val chooser = Intent.createChooser(intent, "Pay via PhonePe or any UPI App")
                                     activity.startActivity(chooser)
                                 } catch (e: Exception) {
-                                    Toast.makeText(activity, "No UPI app found", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(activity, "Payment failed: ${e.message}", Toast.LENGTH_SHORT).show()
                                 }
                             },
                             modifier = Modifier.fillMaxWidth().height(58.dp),
@@ -975,7 +1016,17 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
                     }
                     
                     Spacer(modifier = Modifier.height(16.dp))
-                    TextButton(onClick = { navController.navigate("home") { popUpTo(0) } }) { Text("Close", color = DeepPurple, fontWeight = FontWeight.Bold) }
+                    Button(
+                        onClick = { 
+                            navController.navigate("home") {
+                                popUpTo(0) { inclusive = true }
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.LightGray)
+                    ) {
+                        Text("Close Dashboard", color = Color.DarkGray)
+                    }
                 } else {
                     val msg = when {
                         emergencyState == "pending" -> t("Searching for ambulance...", "एम्बुलेंस खोज रहा है...", "ಆಂಬ್ಯುಲೆನ್ಸ್ ಹುಡುಕಲಾಗುತ್ತಿದೆ...")

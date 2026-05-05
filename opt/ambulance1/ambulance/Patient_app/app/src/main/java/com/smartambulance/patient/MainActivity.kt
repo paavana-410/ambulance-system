@@ -179,6 +179,14 @@ object UserSession {
     var isAutoPayEnabled: Boolean
         get() = prefs.getBoolean("isAutoPayEnabled", false)
         set(value) = prefs.edit().putBoolean("isAutoPayEnabled", value).apply()
+
+    var isPendingPayment: Boolean
+        get() = prefs.getBoolean("isPendingPayment", false)
+        set(value) = prefs.edit().putBoolean("isPendingPayment", value).apply()
+
+    var lastFare: String
+        get() = prefs.getString("lastFare", "0.0") ?: "0.0"
+        set(value) = prefs.edit().putString("lastFare", value).apply()
 }
 
 fun t(en: String, hi: String, kn: String): String {
@@ -899,14 +907,36 @@ fun HomeScreen(navController: NavController, activity: MainActivity) {
         Box(modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 60.dp)) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 // Persistent Pay Now if pending
-                if (UserSession.isAutoPayEnabled || true) { // Using true for demo, should be based on actual status
-                     Card(
-                        modifier = Modifier.padding(bottom = 16.dp).width(200.dp),
+                if (UserSession.isPendingPayment) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(bottom = 16.dp),
                         colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF3E0)),
-                        shape = RoundedCornerShape(12.dp)
+                        shape = RoundedCornerShape(12.dp),
+                        elevation = CardDefaults.cardElevation(8.dp)
                     ) {
-                        TextButton(onClick = { /* In a real app, navigate to payment history */ }) {
-                            Text("💳 Pending Payment Found", color = Color(0xFFE65100), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        Column(modifier = Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text("💳", fontSize = 20.sp)
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Pending Payment Found", fontWeight = FontWeight.Bold, color = Color(0xFFE65100))
+                            }
+                            Text("Amount: ₹${UserSession.lastFare}", fontSize = 22.sp, fontWeight = FontWeight.ExtraBold, color = Color.Black)
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Button(
+                                onClick = {
+                                    val upiUri = "upi://pay?pa=resqgo@upi&pn=ResQGo&am=${UserSession.lastFare}&cu=INR&tn=PendingRide&tr=TXID${System.currentTimeMillis()}"
+                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(upiUri))
+                                    try {
+                                        activity.startActivity(Intent.createChooser(intent, "Pay Now"))
+                                        UserSession.isPendingPayment = false
+                                    } catch (e: Exception) {}
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE65100)),
+                                modifier = Modifier.fillMaxWidth().height(48.dp),
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Text("PAY NOW", color = Color.White, fontWeight = FontWeight.Bold)
+                            }
                         }
                     }
                 }
@@ -1008,11 +1038,6 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
                 hospLat = status.dest_lat ?: 0.0
                 hospLon = status.dest_lon ?: 0.0
 
-                if (emergencyState != lastStatus) {
-                   Log.d("STATUS_CHANGE", "New status: $emergencyState")
-                   lastStatus = emergencyState
-                }
-
                 if (emergencyState == "declined") {
                     navController.popBackStack()
                     return@LaunchedEffect
@@ -1027,10 +1052,8 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
                 }
             } catch (e: Exception) {}
             if (emergencyState == "completed") {
-                // Don't pop immediately, wait for user to see fare and pay
-                // kotlinx.coroutines.delay(3000)
-                // navController.popBackStack()
-                // return@LaunchedEffect
+                UserSession.isPendingPayment = true
+                UserSession.lastFare = String.format("%.2f", fare)
             }
             kotlinx.coroutines.delay(3000)
         }
@@ -1247,14 +1270,14 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
                         // PhonePe Pay Now button
                         Button(
                             onClick = {
-                                val upiUri = "upi://pay?pa=resqgo@upi&pn=ResQGo&am=$fare&cu=INR&tn=ResQGoRide&tr=TXN${System.currentTimeMillis()}"
-                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(upiUri))
                                 try {
-                                    // Try opening in any UPI app
+                                    val formattedFare = String.format("%.2f", fare)
+                                    val upiUri = "upi://pay?pa=resqgo@upi&pn=ResQGo&am=$formattedFare&cu=INR&tn=ResQGoRide&tr=TXID${System.currentTimeMillis()}"
+                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(upiUri))
                                     val chooser = Intent.createChooser(intent, "Pay via PhonePe or any UPI App")
                                     activity.startActivity(chooser)
                                 } catch (e: Exception) {
-                                    Toast.makeText(activity, "No UPI app found", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(activity, "Payment failed: ${e.message}", Toast.LENGTH_SHORT).show()
                                 }
                             },
                             modifier = Modifier.fillMaxWidth().height(58.dp),
@@ -1273,8 +1296,16 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
-                    TextButton(onClick = { navController.navigate("home") { popUpTo(0) } }) {
-                        Text("Close", color = DeepPurple, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    Button(
+                        onClick = { 
+                            navController.navigate("home") {
+                                popUpTo(0) { inclusive = true }
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.LightGray)
+                    ) {
+                        Text("Close Dashboard", color = Color.DarkGray)
                     }
                 } else {
                     val msg = when {
