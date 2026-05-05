@@ -310,37 +310,58 @@ fun RoleSelectionScreen(navController: NavController) {
 
 @Composable
 fun LanguageScreen(navController: NavController) {
-    Column(
-        modifier = Modifier.fillMaxSize().background(LightBg).padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(Color(0xFFFFFFFF), Color(0xFFF0F2F5))
+                )
+            )
     ) {
-        Text("Choose Language", fontSize = 28.sp, fontWeight = FontWeight.Bold, color = ResQGRed)
-        Spacer(modifier = Modifier.height(40.dp))
-        
-        listOf(
-            Triple(0, "English 📖", "English"),
-            Triple(1, "Hindi (हिंदी) 📖", "हिंदी"),
-            Triple(2, "Kannada (ಕನ್ನಡ) 📖", "ಕನ್ನಡ")
-        ).forEach { lang ->
-            Button(
-                onClick = { 
-                    UserSession.language = lang.first
-                    navController.navigate("email") 
-                },
-                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp).height(55.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color.White),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Text(lang.second, color = ResQGRed, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+        Column(
+            modifier = Modifier.fillMaxSize().padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text("Choose Language", fontSize = 28.sp, fontWeight = FontWeight.Bold, color = ResQGRed)
+            Spacer(modifier = Modifier.height(40.dp))
+            
+            listOf(
+                Triple(0, "English", Color(0xFF5B3EB6)),
+                Triple(1, "Hindi (हिंदी)", Color(0xFFE65100)),
+                Triple(2, "Kannada (ಕನ್ನಡ)", Color(0xFFC62828))
+            ).forEach { (id, label, color) ->
+                Card(
+                    onClick = { 
+                        UserSession.language = id
+                        navController.navigate("email") 
+                    },
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp).height(70.dp),
+                    shape = RoundedCornerShape(18.dp),
+                    colors = CardDefaults.cardColors(containerColor = color),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                        Text(
+                            text = label, 
+                            color = Color.White, 
+                            fontSize = 22.sp, 
+                            fontWeight = FontWeight.ExtraBold,
+                            letterSpacing = 1.sp
+                        )
+                    }
+                }
             }
-        }
-        Spacer(modifier = Modifier.height(24.dp))
-        TextButton(onClick = { navController.navigate("login") }) {
-            Text("Already an existing user? Login here", color = ResQGRed)
-        }
-        TextButton(onClick = { navController.navigate("role_selection") { popUpTo("role_selection") { inclusive = true } } }) {
-            Text("Back to Role Selection", color = Color.Gray)
+            Spacer(modifier = Modifier.height(24.dp))
+            TextButton(onClick = { navController.navigate("login") }) {
+                Text(
+                    "Already an existing user? Login here", 
+                    color = Color.Gray,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 15.sp
+                )
+            }
         }
     }
 }
