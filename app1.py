@@ -382,11 +382,14 @@ def get_my_ems():
     conn = get_db()
     try:
         cur = conn.cursor(dictionary=True)
+        # Simplified query: return all pending emergencies from the last 15 minutes to be safer
+        fifteen_mins_ago = int(time.time()) - 900
         cur.execute(
             "SELECT * FROM emergencies "
             "WHERE status='pending' "
-            "AND (created_at > FROM_UNIXTIME(%s) OR created_at IS NULL)",
-            (five_mins_ago,),
+            "AND (created_at > FROM_UNIXTIME(%s) OR created_at IS NULL) "
+            "ORDER BY created_at DESC",
+            (fifteen_mins_ago,),
         )
         rows = cur.fetchall()
     finally:
@@ -410,9 +413,8 @@ def get_my_ems():
         for e in emergencies:
             e["distance"] = calculate_haversine(lat, lon, e["lat"], e["lon"])
         emergencies.sort(key=lambda x: x["distance"])
-        return jsonify({"emergencies": [emergencies[0]]})
 
-    return jsonify({"emergencies": [emergencies[0]] if emergencies else []})
+    return jsonify({"emergencies": emergencies})
 
 
 @app.route("/api/accept_emergency", methods=["POST"])

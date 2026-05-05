@@ -1071,9 +1071,6 @@ function checkCurrentMission() {
     .catch(err => console.error("Error checking session:", err));
 }
 
-// Update system status every 10 seconds
-setInterval(updateSystemStatus, 10000);
-
 // Enter key support for login and hospital search
 document.getElementById('password').addEventListener('keypress', function(e) {
     if (e.key === 'Enter') {

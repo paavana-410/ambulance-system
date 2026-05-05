@@ -55,7 +55,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.launch
 
 val DeepPurple = Color(0xFF6200EE)
-val ResQGRed = Color(0xFFFF4D4D)
+val ResQGoRed = Color(0xFFFF4D4D)
 val LightBlue = Color(0xFFEBF0FE)
 
 class MainActivity : ComponentActivity() {
@@ -544,7 +544,7 @@ fun RegisterScreen(navController: NavController, email: String) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Text(t("Complete Profile", "प्रोफाइल पूरी करें", "ಪ್ರೊಫೈಲ್ ಪೂರ್ಣಗೊಳಿಸಿ"), fontSize = 26.sp, fontWeight = FontWeight.Bold, color = Color.White)
+        Text(t("ResQGo", "ResQGo", "ResQGo"), fontSize = 26.sp, fontWeight = FontWeight.Bold, color = Color.White)
         Spacer(modifier = Modifier.height(32.dp))
         
         Card(
@@ -1446,7 +1446,7 @@ fun DriverHomeScreen(navController: NavController, activity: MainActivity) {
                             <script>
                                 var map = L.map('map', {zoomControl: false}).setView([0,0], 16);
                                 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-                                var driverMarker = L.marker([0,0], {icon: L.icon({iconUrl: 'https://cdn-icons-png.flaticon.com/512/2967/2967350.png', iconSize:[35,35]})}).addTo(map);
+                                var driverMarker = L.marker([0,0], {icon: L.icon({iconUrl: 'https://cdn-icons-png.flaticon.com/512/1077/1077114.png', iconSize:[35,35]})}).addTo(map);
                                 
                                 var routingControl = null;
 
