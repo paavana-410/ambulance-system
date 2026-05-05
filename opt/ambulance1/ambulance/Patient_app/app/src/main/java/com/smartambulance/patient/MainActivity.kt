@@ -975,6 +975,8 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
     var hospLon by remember { mutableStateOf(0.0) }
     
     var lastStatus by remember { mutableStateOf("") }
+    var payTimer by remember { mutableStateOf(30) }
+    var isAutoPayPending by remember { mutableStateOf(false) }
     
     LaunchedEffect(Unit) {
         while (true) {
@@ -1016,6 +1018,18 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
                 // return@LaunchedEffect
             }
             kotlinx.coroutines.delay(3000)
+        }
+    }
+
+    // Payment Timer
+    LaunchedEffect(emergencyState) {
+        if (emergencyState == "completed") {
+            payTimer = 30
+            while (payTimer > 0) {
+                kotlinx.coroutines.delay(1000)
+                payTimer--
+            }
+            isAutoPayPending = true
         }
     }
 
@@ -1090,15 +1104,15 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
                                             
                                             patientMarker = L.marker([0, 0], {
                                                 icon: L.icon({
-                                                    iconUrl: 'https://cdn-icons-png.flaticon.com/512/2922/2922510.png',
-                                                    iconSize:[35,35], iconAnchor: [17, 17]
+                                                    iconUrl: 'https://cdn-icons-png.flaticon.com/512/2864/2864403.png',
+                                                    iconSize:[45,45], iconAnchor: [22, 22]
                                                 })
                                             });
 
                                             hospitalMarker = L.marker([0, 0], {
                                                 icon: L.icon({
                                                     iconUrl: 'https://cdn-icons-png.flaticon.com/512/1032/1032989.png',
-                                                    iconSize:[35,35], iconAnchor: [17, 17]
+                                                    iconSize:[40,40], iconAnchor: [20, 20]
                                                 })
                                             });
 
@@ -1124,7 +1138,7 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
                                         }
 
                                         // Update Route Line
-                                        if (state === 'pending' || state === 'accepted') {
+                                        if (state === 'accepted') {
                                             if (ambLat !== 0 && patLat !== 0) {
                                                 routeLine.setLatLngs([[ambLat, ambLon], [patLat, patLon]]);
                                             }
@@ -1135,6 +1149,16 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
                                             if (map.hasLayer(patientMarker)) map.removeLayer(patientMarker);
                                         } else {
                                             routeLine.setLatLngs([]);
+                                        }
+                                        
+                                        // Auto-fit bounds if we have at least two points
+                                        var group = [];
+                                        if (ambulanceMarker && map.hasLayer(ambulanceMarker)) group.push(ambulanceMarker.getLatLng());
+                                        if (patientMarker && map.hasLayer(patientMarker)) group.push(patientMarker.getLatLng());
+                                        if (hospitalMarker && map.hasLayer(hospitalMarker)) group.push(hospitalMarker.getLatLng());
+                                        
+                                        if (group.length >= 2) {
+                                            map.fitBounds(L.latLngBounds(group), {padding: [50, 50]});
                                         }
 
                                     } catch(e) {
@@ -1171,43 +1195,49 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
 
                     Spacer(modifier = Modifier.height(20.dp))
 
-                    // PhonePe Pay Now button - always visible
-                    Button(
-                        onClick = {
-                            val upiUri = "upi://pay?pa=resqgo@upi&pn=ResQGo&am=$fare&cu=INR"
-                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(upiUri))
-                            intent.setPackage("com.phonepe.app")
-                            try {
-                                activity.startActivity(intent)
-                            } catch (e: Exception) {
-                                // Fallback to any UPI app
-                                val fallbackIntent = Intent(Intent.ACTION_VIEW, Uri.parse(upiUri))
-                                val chooser = Intent.createChooser(fallbackIntent, "Pay via UPI")
-                                activity.startActivity(chooser)
-                            }
-                        },
-                        modifier = Modifier.fillMaxWidth().height(58.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF5B3EB6)),
-                        shape = RoundedCornerShape(14.dp),
-                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 8.dp)
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("📱", fontSize = 22.sp)
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Text("PAY NOW via PhonePe", color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 17.sp)
+                    if (isAutoPayPending) {
+                        Card(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF3E0)),
+                            shape = RoundedCornerShape(10.dp)
+                        ) {
+                            Text(
+                                text = "⚠️ Payment Pending\nSince you did not pay now, you can pay anytime within 3 days or it will autopay on the third day.",
+                                fontSize = 13.sp,
+                                color = Color(0xFFE65100),
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.padding(12.dp),
+                                fontWeight = FontWeight.Bold
+                            )
                         }
+                    } else {
+                        // PhonePe Pay Now button
+                        Button(
+                            onClick = {
+                                val upiUri = "upi://pay?pa=resqgo@upi&pn=ResQGo&am=$fare&cu=INR"
+                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(upiUri))
+                                try {
+                                    // Try opening in any UPI app
+                                    val chooser = Intent.createChooser(intent, "Pay with PhonePe or UPI")
+                                    activity.startActivity(chooser)
+                                } catch (e: Exception) {
+                                    Toast.makeText(activity, "No UPI app found", Toast.LENGTH_SHORT).show()
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth().height(58.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF5B3EB6)),
+                            shape = RoundedCornerShape(14.dp),
+                            elevation = ButtonDefaults.buttonElevation(defaultElevation = 8.dp)
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text("📱", fontSize = 22.sp)
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Text("PAY NOW via PhonePe", color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 17.sp)
+                            }
+                        }
+                        
+                        Text("AutoPay in ${payTimer}s", fontSize = 12.sp, color = Color.Gray, modifier = Modifier.padding(top = 4.dp))
                     }
-
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    // AutoPay fallback note
-                    Text(
-                        text = "If not paid now, AutoPay will auto-settle after 3 days.",
-                        fontSize = 12.sp,
-                        color = Color(0xFF888888),
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)
-                    )
 
                     Spacer(modifier = Modifier.height(16.dp))
                     TextButton(onClick = { navController.popBackStack() }) {

@@ -737,6 +737,13 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
     var eta by remember { mutableStateOf(t("Wait...", "प्रतीक्षा करें...", "ಕಾಯಿರಿ...")) }
     var destName by remember { mutableStateOf<String?>(null) }
     var hospitals by remember { mutableStateOf<List<Hospital>>(emptyList()) }
+    var fare by remember { mutableStateOf(0.0) }
+    var patientLat by remember { mutableStateOf(0.0) }
+    var patientLon by remember { mutableStateOf(0.0) }
+    var hospLat by remember { mutableStateOf(0.0) }
+    var hospLon by remember { mutableStateOf(0.0) }
+    var payTimer by remember { mutableStateOf(30) }
+    var isAutoPayPending by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         while (true) {
@@ -747,6 +754,11 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
                 ambulanceNo = status.ambulance_no ?: "-"
                 destName = status.dest_name
                 driverPhone = status.driver_phone
+                fare = status.fare ?: 0.0
+                patientLat = status.lat ?: 0.0
+                patientLon = status.lon ?: 0.0
+                hospLat = status.dest_lat ?: 0.0
+                hospLon = status.dest_lon ?: 0.0
 
                 if (emergencyState == "declined") {
                     navController.popBackStack()
@@ -762,11 +774,21 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
                 }
             } catch (e: Exception) {}
             if (emergencyState == "completed") {
-                delay(3000)
-                navController.popBackStack()
-                return@LaunchedEffect
+                // Wait for user to pay
             }
             delay(3000)
+        }
+    }
+
+    // Payment Timer
+    LaunchedEffect(emergencyState) {
+        if (emergencyState == "completed") {
+            payTimer = 30
+            while (payTimer > 0) {
+                delay(1000)
+                payTimer--
+            }
+            isAutoPayPending = true
         }
     }
 
@@ -792,17 +814,84 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
                             <div id="map"></div>
                             <script>
                                 var map = null;
-                                var marker = null;
-                                function updateMap(lat, lon) {
-                                    if (lat == 0 && lon == 0) return;
-                                    if (!map) {
-                                        map = L.map('map', {zoomControl: false}).setView([lat, lon], 16);
-                                        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-                                        marker = L.marker([lat, lon], {icon: L.icon({iconUrl: 'https://cdn-icons-png.flaticon.com/512/2967/2967350.png', iconSize:[35,35]})}).addTo(map);
-                                    } else {
-                                        map.setView([lat, lon]);
-                                        marker.setLatLng([lat, lon]);
-                                    }
+                                var ambulanceMarker = null;
+                                var patientMarker = null;
+                                var hospitalMarker = null;
+                                var routeLine = null;
+
+                                function updateMap(ambLat, ambLon, patLat, patLon, hospLat, hospLon, state) {
+                                    try {
+                                        if (typeof L === 'undefined') return;
+                                        
+                                        var centerLat = (ambLat !== 0) ? ambLat : ((patLat !== 0) ? patLat : 13.0266);
+                                        var centerLon = (ambLon !== 0) ? ambLon : ((patLon !== 0) ? patLon : 77.5714);
+
+                                        if (!map) {
+                                            map = L.map('map', {zoomControl: false, attributionControl: false}).setView([centerLat, centerLon], 15);
+                                            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { maxZoom: 19 }).addTo(map);
+                                            
+                                            ambulanceMarker = L.marker([centerLat, centerLon], {
+                                                icon: L.icon({
+                                                    iconUrl: 'https://cdn-icons-png.flaticon.com/512/2967/2967350.png', 
+                                                    iconSize:[40,40], iconAnchor: [20, 20]
+                                                })
+                                            }).addTo(map);
+                                            
+                                            patientMarker = L.marker([0, 0], {
+                                                icon: L.icon({
+                                                    iconUrl: 'https://cdn-icons-png.flaticon.com/512/2864/2864403.png',
+                                                    iconSize:[45,45], iconAnchor: [22, 22]
+                                                })
+                                            });
+
+                                            hospitalMarker = L.marker([0, 0], {
+                                                icon: L.icon({
+                                                    iconUrl: 'https://cdn-icons-png.flaticon.com/512/1032/1032989.png',
+                                                    iconSize:[40,40], iconAnchor: [20, 20]
+                                                })
+                                            });
+
+                                            routeLine = L.polyline([], {color: '#d32f2f', weight: 4, opacity: 0.7, dashArray: '10, 10'}).addTo(map);
+                                        } 
+
+                                        if (ambLat !== 0) {
+                                            ambulanceMarker.setLatLng([ambLat, ambLon]);
+                                        }
+
+                                        if (patLat !== 0) {
+                                            patientMarker.setLatLng([patLat, patLon]);
+                                            if (!map.hasLayer(patientMarker)) patientMarker.addTo(map);
+                                        }
+
+                                        if (hospLat !== 0) {
+                                            hospitalMarker.setLatLng([hospLat, hospLon]);
+                                            if (!map.hasLayer(hospitalMarker)) hospitalMarker.addTo(map);
+                                        }
+
+                                        // Update Route Line
+                                        if (state === 'accepted') {
+                                            if (ambLat !== 0 && patLat !== 0) {
+                                                routeLine.setLatLngs([[ambLat, ambLon], [patLat, patLon]]);
+                                            }
+                                        } else if (state === 'active') {
+                                            if (ambLat !== 0 && hospLat !== 0) {
+                                                routeLine.setLatLngs([[ambLat, ambLon], [hospLat, hospLon]]);
+                                            }
+                                            if (map.hasLayer(patientMarker)) map.removeLayer(patientMarker);
+                                        } else {
+                                            routeLine.setLatLngs([]);
+                                        }
+                                        
+                                        // Auto-fit
+                                        var group = [];
+                                        if (ambulanceMarker && map.hasLayer(ambulanceMarker)) group.push(ambulanceMarker.getLatLng());
+                                        if (patientMarker && map.hasLayer(patientMarker)) group.push(patientMarker.getLatLng());
+                                        if (hospitalMarker && map.hasLayer(hospitalMarker)) group.push(hospitalMarker.getLatLng());
+                                        if (group.length >= 2) {
+                                            map.fitBounds(L.latLngBounds(group), {padding: [50, 50]});
+                                        }
+
+                                    } catch(e) { console.error(e); }
                                 }
                             </script>
                         </body>
@@ -812,9 +901,7 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
                 }
             },
             update = { view ->
-                if (lat != 0.0 && lon != 0.0) {
-                    view.evaluateJavascript("updateMap($lat, $lon)", null)
-                }
+                view.evaluateJavascript("if(typeof updateMap==='function'){updateMap($lat, $lon, $patientLat, $patientLon, $hospLat, $hospLon, '$emergencyState');}", null)
             },
             modifier = Modifier.fillMaxSize()
         )
@@ -829,16 +916,62 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
             Column(modifier = Modifier.padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 if(emergencyState == "completed") {
                     Text("✅ Ride Completed", fontWeight = FontWeight.ExtraBold, fontSize = 24.sp, color = Color(0xFF155724))
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text("Total Fare: ₹$fare", fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, color = DeepPurple)
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    if (isAutoPayPending) {
+                        Card(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF3E0)),
+                            shape = RoundedCornerShape(10.dp)
+                        ) {
+                            Text(
+                                text = "⚠️ Payment Pending\nSince you did not pay now, you can pay anytime within 3 days or it will autopay on the third day.",
+                                fontSize = 13.sp,
+                                color = Color(0xFFE65100),
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.padding(12.dp),
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    } else {
+                        Button(
+                            onClick = {
+                                val upiUri = "upi://pay?pa=resqgo@upi&pn=ResQGo&am=$fare&cu=INR"
+                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(upiUri))
+                                try {
+                                    val chooser = Intent.createChooser(intent, "Pay via UPI")
+                                    activity.startActivity(chooser)
+                                } catch (e: Exception) {
+                                    Toast.makeText(activity, "No UPI app found", Toast.LENGTH_SHORT).show()
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth().height(58.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF5B3EB6)),
+                            shape = RoundedCornerShape(14.dp)
+                        ) {
+                            Text("PAY NOW via PhonePe", color = Color.White, fontWeight = FontWeight.Bold)
+                        }
+                        Text("AutoPay in ${payTimer}s", fontSize = 12.sp, color = Color.Gray, modifier = Modifier.padding(top = 4.dp))
+                    }
+                    
+                    Spacer(modifier = Modifier.height(16.dp))
+                    TextButton(onClick = { navController.popBackStack() }) { Text("Close") }
                 } else {
                     val msg = when {
                         emergencyState == "pending" -> t("Searching for ambulance...", "एम्बुलेंस खोज रहा है...", "ಆಂಬ್ಯುಲೆನ್ಸ್ ಹುಡುಕಲಾಗುತ್ತಿದೆ...")
+                        emergencyState == "accepted" -> t("Driver accepted! Arriving in $eta", "ड्राइवर ने स्वीकार किया! $eta में आ रहा है", "ಚಾಲಕ ಒಪ್ಪಿದ್ದಾರೆ! $eta ನಿಮಿಷಗಳಲ್ಲಿ ಆಗಮಿಸುತ್ತಾರೆ")
                         emergencyState == "active" -> t("Heading to hospital", "अस्पताल की ओर", "ಆಸ್ಪತ್ರೆಯತ್ತ")
-                        else -> t("Ambulance arriving in $eta", "$eta में एम्बुलेंस आ रही है", "$eta ನಿಮಿಷಗಳಲ್ಲಿ ಆಂಬ್ಯುಲೆನ್ಸ್ ಆಗಮಿಸುತ್ತದೆ")
+                        else -> t("Please wait...", "कृपया प्रतीक्षा करें...", "ದಯವಿಟ್ಟು ಕಾಯಿರಿ...")
                     }
                     Text(msg, fontWeight = FontWeight.Bold, fontSize = 20.sp, textAlign = TextAlign.Center, color = DeepPurple)
                     
                     if (emergencyState != "pending" && driverName != "-") {
                         Spacer(modifier = Modifier.height(12.dp))
+                        if (destName != null) {
+                            Text("🏥 Destination: $destName", fontWeight = FontWeight.Bold, color = Color(0xFF2E7D32))
+                        }
                         Divider()
                         Spacer(modifier = Modifier.height(12.dp))
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
