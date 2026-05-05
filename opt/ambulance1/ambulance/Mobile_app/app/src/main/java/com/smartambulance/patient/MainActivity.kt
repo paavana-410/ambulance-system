@@ -806,6 +806,8 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
                         <head>
                             <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
                             <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+                            <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
+                            <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
                             <style>
                                 body, html, #map { height: 100%; width: 100%; margin: 0; padding: 0; overflow: hidden; background: #eee; }
                             </style>
@@ -817,7 +819,7 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
                                 var ambulanceMarker = null;
                                 var patientMarker = null;
                                 var hospitalMarker = null;
-                                var routeLine = null;
+                                var routingControl = null;
 
                                 function updateMap(ambLat, ambLon, patLat, patLon, hospLat, hospLon, state) {
                                     try {
@@ -850,8 +852,6 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
                                                     iconSize:[40,40], iconAnchor: [20, 20]
                                                 })
                                             });
-
-                                            routeLine = L.polyline([], {color: '#d32f2f', weight: 4, opacity: 0.7, dashArray: '10, 10'}).addTo(map);
                                         } 
 
                                         if (ambLat !== 0) {
@@ -868,18 +868,36 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
                                             if (!map.hasLayer(hospitalMarker)) hospitalMarker.addTo(map);
                                         }
 
-                                        // Update Route Line
+                                        // Update Routing Control
+                                        var waypoints = [];
                                         if (state === 'accepted') {
                                             if (ambLat !== 0 && patLat !== 0) {
-                                                routeLine.setLatLngs([[ambLat, ambLon], [patLat, patLon]]);
+                                                waypoints = [L.latLng(ambLat, ambLon), L.latLng(patLat, patLon)];
                                             }
                                         } else if (state === 'active') {
                                             if (ambLat !== 0 && hospLat !== 0) {
-                                                routeLine.setLatLngs([[ambLat, ambLon], [hospLat, hospLon]]);
+                                                waypoints = [L.latLng(ambLat, ambLon), L.latLng(hospLat, hospLon)];
                                             }
                                             if (map.hasLayer(patientMarker)) map.removeLayer(patientMarker);
+                                        }
+
+                                        if (waypoints.length >= 2) {
+                                            if (!routingControl) {
+                                                routingControl = L.Routing.control({
+                                                    waypoints: waypoints,
+                                                    routeWhileDragging: false,
+                                                    show: false,
+                                                    addWaypoints: false,
+                                                    lineOptions: { styles: [{ color: '#d32f2f', opacity: 0.8, weight: 6 }] }
+                                                }).addTo(map);
+                                            } else {
+                                                routingControl.setWaypoints(waypoints);
+                                            }
                                         } else {
-                                            routeLine.setLatLngs([]);
+                                            if (routingControl) {
+                                                map.removeControl(routingControl);
+                                                routingControl = null;
+                                            }
                                         }
                                         
                                         // Auto-fit
@@ -938,10 +956,10 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
                     } else {
                         Button(
                             onClick = {
-                                val upiUri = "upi://pay?pa=resqgo@upi&pn=ResQGo&am=$fare&cu=INR"
+                                val upiUri = "upi://pay?pa=resqgo@upi&pn=ResQGo&am=$fare&cu=INR&tn=ResQGoRide&tr=TXN${System.currentTimeMillis()}"
                                 val intent = Intent(Intent.ACTION_VIEW, Uri.parse(upiUri))
                                 try {
-                                    val chooser = Intent.createChooser(intent, "Pay via UPI")
+                                    val chooser = Intent.createChooser(intent, "Pay via PhonePe or any UPI App")
                                     activity.startActivity(chooser)
                                 } catch (e: Exception) {
                                     Toast.makeText(activity, "No UPI app found", Toast.LENGTH_SHORT).show()
@@ -957,7 +975,7 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
                     }
                     
                     Spacer(modifier = Modifier.height(16.dp))
-                    TextButton(onClick = { navController.popBackStack() }) { Text("Close") }
+                    TextButton(onClick = { navController.navigate("home") { popUpTo(0) } }) { Text("Close", color = DeepPurple, fontWeight = FontWeight.Bold) }
                 } else {
                     val msg = when {
                         emergencyState == "pending" -> t("Searching for ambulance...", "एम्बुलेंस खोज रहा है...", "ಆಂಬ್ಯುಲೆನ್ಸ್ ಹುಡುಕಲಾಗುತ್ತಿದೆ...")

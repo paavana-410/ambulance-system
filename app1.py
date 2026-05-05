@@ -667,17 +667,30 @@ def complete_mission():
         cur = conn.cursor(dictionary=True)
         # 1. Fetch mission details to calculate fare
         if driver_id:
+            # Check for ANY recent mission for this driver (active or just completed)
             cur.execute(
                 "SELECT * FROM emergencies "
-                "WHERE driver_id=%s AND status IN ('accepted','active') LIMIT 1",
+                "WHERE driver_id=%s ORDER BY created_at DESC LIMIT 1",
                 (driver_id,),
             )
         else:
             cur.execute("SELECT * FROM emergencies WHERE emergency_id=%s", (eid,))
         
         mission = cur.fetchone()
+        
         if not mission:
-            return jsonify({"status": "error", "message": "No active mission found"}), 404
+            return jsonify({"status": "error", "message": "No mission found"}), 404
+
+        # If mission is already completed, just return success with existing fare
+        if mission["status"] == "completed":
+            return jsonify({
+                "status": "completed", 
+                "fare": mission.get("fare", 0.0), 
+                "distance": f"{mission.get('ride_distance', 0.0):.2f} km"
+            })
+
+        if mission["status"] not in ["accepted", "active"]:
+             return jsonify({"status": "error", "message": "No active mission to complete"}), 400
 
         # 2. Calculate Distance and Fare
         # Distance between Pickup (lat/lon) and Destination (dest_lat/dest_lon)

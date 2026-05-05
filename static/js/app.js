@@ -923,43 +923,21 @@ function completeMission() {
     .then(data => {
         console.log("📨 Complete mission response:", data);
         
-        if (data.status === 'completed') {
+        if (data.status === 'completed' || data.status === 'success') {
             // Show completion modal
-            document.getElementById('final-fare').textContent = `₹${data.fare}`;
+            document.getElementById('final-fare').textContent = `₹${data.fare || '0.00'}`;
             document.getElementById('mission-complete-modal').style.display = 'flex';
 
             // Reset everything
             document.getElementById('mission-info').style.display = 'none';
             document.getElementById('hospital-search-section').style.display = 'none';
-            document.getElementById('status-indicator').textContent = 'Mission Completed';
-            document.getElementById('status-indicator').className = 'status-indicator status-available';
-            document.getElementById('your-status').textContent = 'Mission Completed';
-            
-            setTimeout(() => {
-                document.getElementById('status-indicator').textContent = 'Available';
-                document.getElementById('your-status').textContent = 'Available';
-            }, 8000);
-            
-            // Clear markers
-            if (patientMarker) {
-                map.removeLayer(patientMarker);
-                patientMarker = null;
-            }
-            if (hospitalMarker) {
-                map.removeLayer(hospitalMarker);
-                hospitalMarker = null;
-            }
-            
-            // Clear search
-            document.getElementById('hospital-search').value = '';
-            document.getElementById('hospital-list').innerHTML = '';
             
             currentMission = null;
             currentEmergency = null;
-            
             updateSystemStatus();
-        } else {
-            alert('Error completing mission: ' + (data.message || 'Unknown error'));
+        } else if (currentMission) {
+            // Only alert if we actually thought we had a mission
+            alert('Status: ' + (data.message || 'Mission processed'));
         }
     })
     .catch(error => {
