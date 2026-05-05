@@ -294,6 +294,10 @@ function hideEmergencyPopup() {
     document.getElementById('emergency-popup').style.display = 'none';
     clearInterval(emergencyTimer);
     currentEmergency = null;
+    if (patientMarker) {
+        map.removeLayer(patientMarker);
+        patientMarker = null;
+    }
     
     // Reset status if not on mission
     if (!document.getElementById('mission-info').style.display || 

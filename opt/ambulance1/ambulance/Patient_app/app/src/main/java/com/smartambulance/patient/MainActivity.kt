@@ -55,7 +55,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.launch
 
 val DeepPurple = Color(0xFF6200EE)
-val ResQGoRed = Color(0xFFFF4D4D)
+val ResQGRed = Color(0xFFFF4D4D)
 val LightBlue = Color(0xFFEBF0FE)
 
 class MainActivity : ComponentActivity() {
@@ -673,7 +673,8 @@ fun HomeScreen(navController: NavController, activity: MainActivity) {
                     settings.loadWithOverviewMode = true
                     settings.useWideViewPort = true
                     settings.mixedContentMode = android.webkit.WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
-                    settings.userAgentString = "ResQGo/1.0 (Android; Student Project; contact@resqgo.app)"`n                    addJavascriptInterface(WebAppInterface(activity), "Android")
+                    settings.userAgentString = "ResQGo/1.0 (Android; Student Project; contact@resqgo.app)"
+                    addJavascriptInterface(WebAppInterface(activity), "Android")
                     
                     setPadding(0,0,0,0)
                     
