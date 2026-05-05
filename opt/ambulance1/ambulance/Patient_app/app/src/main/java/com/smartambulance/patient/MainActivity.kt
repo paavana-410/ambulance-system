@@ -10,6 +10,7 @@ import android.location.Location
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
+import android.webkit.JavascriptInterface
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.Toast
@@ -298,6 +299,13 @@ fun SplashScreen(navController: NavController, viewModel: AuthViewModel) {
                 }) { Text("Save") }
             }
         )
+    }
+}
+
+class WebAppInterface(private val mContext: Context) {
+    @JavascriptInterface
+    fun showToast(toast: String) {
+        Toast.makeText(mContext, toast, Toast.LENGTH_SHORT).show()
     }
 }
 
@@ -665,7 +673,7 @@ fun HomeScreen(navController: NavController, activity: MainActivity) {
                     settings.loadWithOverviewMode = true
                     settings.useWideViewPort = true
                     settings.mixedContentMode = android.webkit.WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
-                    settings.userAgentString = "ResQGo/1.0 (Android; Student Project; contact@resqgo.app)"
+                    settings.userAgentString = "ResQGo/1.0 (Android; Student Project; contact@resqgo.app)"`n                    addJavascriptInterface(WebAppInterface(activity), "Android")
                     
                     setPadding(0,0,0,0)
                     
@@ -1017,7 +1025,7 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
                     settings.loadWithOverviewMode = true
                     settings.useWideViewPort = true
                     settings.mixedContentMode = android.webkit.WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
-                    settings.userAgentString = "ResQGo/1.0 (Android; Student Project; contact@resqgo.app)"
+                    settings.userAgentString = "ResQGo/1.0 (Android; Student Project; contact@resqgo.app)"`n                    addJavascriptInterface(WebAppInterface(activity), "Android")
                     
                     // Force the map to fill the space
                     setPadding(0,0,0,0)

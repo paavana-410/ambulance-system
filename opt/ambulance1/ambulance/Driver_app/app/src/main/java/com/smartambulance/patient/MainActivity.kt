@@ -13,6 +13,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.media.RingtoneManager
+import android.webkit.JavascriptInterface
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.Toast
@@ -512,6 +513,7 @@ fun DriverHomeScreen(navController: NavController, activity: MainActivity, viewM
                     settings.loadWithOverviewMode = true
                     settings.useWideViewPort = true
                     settings.mixedContentMode = android.webkit.WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+                    addJavascriptInterface(WebAppInterface(activity), "Android")
                     
                     setPadding(0,0,0,0)
                     
@@ -776,5 +778,12 @@ fun DriverHomeScreen(navController: NavController, activity: MainActivity, viewM
                 }
             }
         }
+    }
+}
+
+class WebAppInterface(private val mContext: Context) {
+    @JavascriptInterface
+    fun showToast(toast: String) {
+        Toast.makeText(mContext, toast, Toast.LENGTH_SHORT).show()
     }
 }
