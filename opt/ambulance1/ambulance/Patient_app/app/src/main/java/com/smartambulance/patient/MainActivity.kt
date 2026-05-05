@@ -167,7 +167,7 @@ object UserSession {
         set(value) = prefs.edit().putInt("driverId", value).apply()
 
     val isPatientLoggedIn: Boolean
-        get() = role == "patient" && email.isNotBlank() && username.isNotBlank() && isProfileComplete
+        get() = role == "patient" && email.isNotBlank() && username.isNotBlank() && phone.isNotBlank() && isProfileComplete
 
     val isDriverLoggedIn: Boolean
         get() = role == "driver" && driverId != -1
@@ -459,7 +459,8 @@ fun EmailScreen(navController: NavController, viewModel: AuthViewModel) {
                 OutlinedButton(
                     onClick = {
                         UserSession.email = "demo@resqgo.com"
-                        UserSession.username = "demo@resqgo.com"
+                        UserSession.username = "Guest User"
+                        UserSession.phone = "9999999999"
                         UserSession.role = "patient"
                         UserSession.isProfileComplete = true
                         navController.navigate("home") { popUpTo(0) }
@@ -615,16 +616,21 @@ fun LoginScreen(navController: NavController) {
             colors = CardDefaults.cardColors(containerColor = Color.White)
         ) {
             Column(modifier = Modifier.padding(24.dp)) {
+                var phone by remember { mutableStateOf("") }
+                
                 OutlinedTextField(value = email, onValueChange = { email = it }, label = { Text("Email Address") }, modifier = Modifier.fillMaxWidth(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email))
                 Spacer(modifier = Modifier.height(12.dp))
                 OutlinedTextField(value = password, onValueChange = { password = it }, label = { Text(t("Password", "पासवर्ड", "ಪಾಸ್ವರ್ಡ್")) }, modifier = Modifier.fillMaxWidth(), visualTransformation = PasswordVisualTransformation())
+                Spacer(modifier = Modifier.height(12.dp))
+                OutlinedTextField(value = phone, onValueChange = { phone = it }, label = { Text(t("Phone Number", "फ़ोन नंबर", "ದೂರವಾಣಿ ಸಂಖ್ಯೆ")) }, modifier = Modifier.fillMaxWidth(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone))
                 
                 Spacer(modifier = Modifier.height(24.dp))
                 Button(
                     onClick = {
-                        if (email.isNotBlank() && password.isNotBlank()) {
+                        if (email.isNotBlank() && password.isNotBlank() && phone.isNotBlank()) {
                             UserSession.email = email
                             UserSession.username = email
+                            UserSession.phone = phone
                             UserSession.isProfileComplete = true
                             navController.navigate("home") { popUpTo("login") { inclusive = true } }
                         }
@@ -865,9 +871,12 @@ fun HomeScreen(navController: NavController, activity: MainActivity) {
                     UserSession.phone = ""; UserSession.email = ""; UserSession.username = ""; UserSession.isProfileComplete = false
                     navController.navigate("splash") { popUpTo("home") { inclusive = true } }
                 },
-                colors = ButtonDefaults.buttonColors(containerColor = ResQGRed)
+                colors = ButtonDefaults.buttonColors(containerColor = ResQGRed),
+                modifier = Modifier.size(height = 45.dp, width = 85.dp),
+                shape = RoundedCornerShape(10.dp),
+                contentPadding = PaddingValues(0.dp)
             ) {
-                Text(t("Logout", "लॉग आउट", "ಲಾಗ್ ಔಟ್"), fontSize = 12.sp)
+                Text(t("Logout", "लॉग आउट", "ಲಾಗ್ ಔಟ್"), fontSize = 12.sp, fontWeight = FontWeight.Bold)
             }
         }
 
@@ -918,6 +927,7 @@ fun HomeScreen(navController: NavController, activity: MainActivity) {
                                         val phone = UserSession.phone
                                         if (phone.isBlank()) {
                                             Toast.makeText(activity, "Error: Phone number missing. Please register again.", Toast.LENGTH_LONG).show()
+                                            navController.navigate("register/${Uri.encode(UserSession.email)}")
                                             loading = false
                                             return@launch
                                         }

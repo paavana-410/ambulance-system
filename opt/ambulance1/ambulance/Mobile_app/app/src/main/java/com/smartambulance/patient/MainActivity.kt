@@ -506,20 +506,23 @@ fun RegisterScreen(navController: NavController, email: String) {
             elevation = CardDefaults.cardElevation(8.dp)
         ) {
             Column(modifier = Modifier.padding(24.dp)) {
+                var phone by remember { mutableStateOf("") }
                 OutlinedTextField(value = firstName, onValueChange = { firstName = it }, label = { Text(t("First Name", "पहला नाम", "ಮೊದಲ ಹೆಸರು")) }, modifier = Modifier.fillMaxWidth(), enabled = !loading)
                 OutlinedTextField(value = lastName, onValueChange = { lastName = it }, label = { Text(t("Last Name", "अंतिम नाम", "ಕೊನೆಯ ಹೆಸರು")) }, modifier = Modifier.fillMaxWidth(), enabled = !loading)
                 OutlinedTextField(value = username, onValueChange = { username = it }, label = { Text(t("Username", "उपयोगकर्ता नाम", "ಬಳಕೆದಾರರ ಹೆಸರು")) }, modifier = Modifier.fillMaxWidth(), enabled = !loading)
                 OutlinedTextField(value = password, onValueChange = { password = it }, label = { Text(t("Password", "पासवर्ड", "ಪಾಸ್ವರ್ಡ್")) }, modifier = Modifier.fillMaxWidth(), visualTransformation = PasswordVisualTransformation(), enabled = !loading)
+                OutlinedTextField(value = phone, onValueChange = { phone = it }, label = { Text(t("Phone Number", "फ़ोन नंबर", "ದೂರವಾಣಿ ಸಂಖ್ಯೆ")) }, modifier = Modifier.fillMaxWidth(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone), enabled = !loading)
                 
                 Spacer(modifier = Modifier.height(24.dp))
                 Button(
                     onClick = {
-                        if (firstName.isNotBlank() && username.isNotBlank() && password.isNotBlank()) {
+                        if (firstName.isNotBlank() && username.isNotBlank() && password.isNotBlank() && phone.isNotBlank()) {
                             loading = true
                             UserSession.firstName = firstName
                             UserSession.lastName = lastName
                             UserSession.email = email
                             UserSession.username = username
+                            UserSession.phone = phone
                             UserSession.role = "patient"
                             UserSession.isProfileComplete = true
                             loading = false
@@ -557,17 +560,21 @@ fun LoginScreen(navController: NavController) {
             colors = CardDefaults.cardColors(containerColor = Color.White)
         ) {
             Column(modifier = Modifier.padding(24.dp)) {
+                var phone by remember { mutableStateOf("") }
                 OutlinedTextField(value = email, onValueChange = { email = it }, label = { Text("Email Address") }, modifier = Modifier.fillMaxWidth(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email))
                 Spacer(modifier = Modifier.height(12.dp))
                 OutlinedTextField(value = password, onValueChange = { password = it }, label = { Text(t("Password", "पासवर्ड", "ಪಾಸ್ವರ್ಡ್")) }, modifier = Modifier.fillMaxWidth(), visualTransformation = PasswordVisualTransformation())
+                Spacer(modifier = Modifier.height(12.dp))
+                OutlinedTextField(value = phone, onValueChange = { phone = it }, label = { Text(t("Phone Number", "फ़ोन नंबर", "ದೂರವಾಣಿ ಸಂಖ್ಯೆ")) }, modifier = Modifier.fillMaxWidth(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone))
                 
                 Spacer(modifier = Modifier.height(24.dp))
                 Button(
                     onClick = {
-                        if (email.isNotBlank() && password.isNotBlank()) {
+                        if (email.isNotBlank() && password.isNotBlank() && phone.isNotBlank()) {
                             UserSession.firstName = "User"
                             UserSession.email = email
                             UserSession.username = email
+                            UserSession.phone = phone
                             UserSession.isProfileComplete = true
                             navController.navigate("home") { popUpTo("login") { inclusive = true } }
                         }
