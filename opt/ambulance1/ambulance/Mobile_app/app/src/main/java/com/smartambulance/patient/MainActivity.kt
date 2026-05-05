@@ -1092,6 +1092,7 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
 fun DriverProfileScreen(navController: NavController) {
     var name by remember { mutableStateOf("") }
     var ambulanceNo by remember { mutableStateOf("") }
+    var upiId by remember { mutableStateOf("") }
     val scope = rememberCoroutineScope()
     var info by remember { mutableStateOf("") }
 
@@ -1115,16 +1116,17 @@ fun DriverProfileScreen(navController: NavController) {
             Column(modifier = Modifier.padding(24.dp)) {
                 OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Driver Name") }, modifier = Modifier.fillMaxWidth())
                 OutlinedTextField(value = ambulanceNo, onValueChange = { ambulanceNo = it }, label = { Text("Ambulance No.") }, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(value = upiId, onValueChange = { upiId = it }, label = { Text("UPI ID (e.g. name@ybl)") }, modifier = Modifier.fillMaxWidth(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email))
                 
                 Spacer(modifier = Modifier.height(24.dp))
                 Button(
                     onClick = {
                         val driverEmail = UserSession.email
 
-                        if (name.isNotBlank() && ambulanceNo.isNotBlank() && driverEmail.isNotBlank()) {
+                        if (name.isNotBlank() && ambulanceNo.isNotBlank() && driverEmail.isNotBlank() && upiId.contains("@")) {
                             scope.launch {
                                 try {
-                                    val res = RetrofitClient.instance.registerDriver(DriverRegisterPayload(name, driverEmail, "otp_user", ambulanceNo, driverEmail))
+                                    val res = RetrofitClient.instance.registerDriver(DriverRegisterPayload(name, driverEmail, "otp_user", ambulanceNo, driverEmail, upiId))
                                     if(res.status == "success" || res.message?.contains("exists") == true) {
                                         // Also login if it exists
                                         val loginRes = RetrofitClient.instance.loginDriver(DriverLoginPayload(driverEmail, "otp_user"))

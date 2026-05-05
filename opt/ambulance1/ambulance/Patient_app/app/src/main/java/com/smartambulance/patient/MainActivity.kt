@@ -1451,6 +1451,7 @@ fun DriverRegisterScreen(navController: NavController) {
     var password by remember { mutableStateOf("") }
     var ambulanceNo by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
+    var upiId by remember { mutableStateOf("") }
     val scope = rememberCoroutineScope()
     var info by remember { mutableStateOf("") }
 
@@ -1477,13 +1478,18 @@ fun DriverRegisterScreen(navController: NavController) {
                 OutlinedTextField(value = password, onValueChange = { password = it }, label = { Text("Password") }, modifier = Modifier.fillMaxWidth(), visualTransformation = PasswordVisualTransformation())
                 OutlinedTextField(value = ambulanceNo, onValueChange = { ambulanceNo = it }, label = { Text("Ambulance No.") }, modifier = Modifier.fillMaxWidth())
                 OutlinedTextField(value = phone, onValueChange = { phone = it }, label = { Text("Phone") }, modifier = Modifier.fillMaxWidth(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone))
+                OutlinedTextField(value = upiId, onValueChange = { upiId = it }, label = { Text("UPI ID (e.g. name@ybl)") }, modifier = Modifier.fillMaxWidth(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email))
                 
                 Spacer(modifier = Modifier.height(24.dp))
                 Button(
                     onClick = {
                         scope.launch {
                             try {
-                                val res = RetrofitClient.instance.registerDriver(DriverRegisterPayload(name, username, password, ambulanceNo, phone))
+                                if (!upiId.contains("@")) {
+                                    info = "Please enter a valid UPI ID"
+                                    return@Button
+                                }
+                                val res = RetrofitClient.instance.registerDriver(DriverRegisterPayload(name, username, password, ambulanceNo, phone, upiId))
                                 if(res.status == "success") {
                                     navController.navigate("driver_login") { popUpTo("driver_register") { inclusive = true } }
                                 } else {
