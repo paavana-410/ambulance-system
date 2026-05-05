@@ -1483,12 +1483,12 @@ fun DriverRegisterScreen(navController: NavController) {
                 Spacer(modifier = Modifier.height(24.dp))
                 Button(
                     onClick = {
+                        if (!upiId.contains("@")) {
+                            info = "Please enter a valid UPI ID"
+                            return@Button
+                        }
                         scope.launch {
                             try {
-                                if (!upiId.contains("@")) {
-                                    info = "Please enter a valid UPI ID"
-                                    return@Button
-                                }
                                 val res = RetrofitClient.instance.registerDriver(DriverRegisterPayload(name, username, password, ambulanceNo, phone, upiId))
                                 if(res.status == "success") {
                                     navController.navigate("driver_login") { popUpTo("driver_register") { inclusive = true } }
