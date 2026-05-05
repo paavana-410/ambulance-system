@@ -475,10 +475,10 @@ fun EmailScreen(navController: NavController, viewModel: AuthViewModel) {
                         navController.navigate("home") { popUpTo(0) }
                     },
                     modifier = Modifier.fillMaxWidth().height(50.dp),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, DeepPurple),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, CoralRed),
                     shape = RoundedCornerShape(12.dp)
                 ) {
-                    Text("SKIP FOR DEMO (GUEST)", color = DeepPurple, fontWeight = FontWeight.SemiBold)
+                    Text("SKIP FOR DEMO (GUEST)", color = CoralRed, fontWeight = FontWeight.SemiBold)
                 }
             }
         }
@@ -524,7 +524,7 @@ fun OtpScreen(navController: NavController, email: String, viewModel: AuthViewMo
                 }
 
                 if (status is AuthStatus.Loading) {
-                    CircularProgressIndicator(color = DeepPurple, modifier = Modifier.size(48.dp))
+                    CircularProgressIndicator(color = CoralRed, modifier = Modifier.size(48.dp))
                     Spacer(modifier = Modifier.height(16.dp))
                 }
 
@@ -535,7 +535,7 @@ fun OtpScreen(navController: NavController, email: String, viewModel: AuthViewMo
                         onClick = { viewModel.sendEmailOtp(email) },
                         enabled = status !is AuthStatus.Loading
                     ) {
-                        Text("Resend Magic Link", color = DeepPurple, fontWeight = FontWeight.Bold)
+                        Text("Resend Magic Link", color = CoralRed, fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -1246,7 +1246,7 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
                 if(emergencyState == "completed") {
                     Text("✅ Ride Completed", fontWeight = FontWeight.ExtraBold, fontSize = 24.sp, color = Color(0xFF155724))
                     Spacer(modifier = Modifier.height(16.dp))
-                    Text("Total Fare: ₹$fare", fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, color = DeepPurple)
+                    Text("Total Fare: ₹$fare", fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, color = CoralRed)
                     Spacer(modifier = Modifier.height(8.dp))
                     Text("Please complete the payment to end session", fontSize = 14.sp, color = Color.Gray)
 
@@ -1316,7 +1316,7 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
                         emergencyState == "completed" -> t("Ride Completed", "यात्रा पूरी हुई", "ಪ್ರಯಾಣ ಪೂರ್ಣಗೊಂಡಿದೆ")
                         else -> t("Please wait...", "कृपया प्रतीक्षा करें...", "ದಯವಿಟ್ಟು ಕಾಯಿರಿ...")
                     }
-                    Text(msg, fontWeight = FontWeight.Bold, fontSize = 20.sp, textAlign = TextAlign.Center, color = DeepPurple)
+                    Text(msg, fontWeight = FontWeight.Bold, fontSize = 20.sp, textAlign = TextAlign.Center, color = CoralRed)
                     
                     if (emergencyState != "pending" && driverName != "-") {
                         Spacer(modifier = Modifier.height(12.dp))
@@ -1601,7 +1601,7 @@ fun DriverHomeScreen(navController: NavController, activity: MainActivity) {
         // Top Actions
         Row(modifier = Modifier.fillMaxWidth().padding(16.dp).align(Alignment.TopCenter), horizontalArrangement = Arrangement.SpaceBetween) {
             Card(shape = RoundedCornerShape(12.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
-                Text(if(isAccepted) "ON MISSION" else "AVAILABLE", modifier = Modifier.padding(12.dp), color = DeepPurple, fontWeight = FontWeight.Bold)
+                Text(if(isAccepted) "ON MISSION" else "AVAILABLE", modifier = Modifier.padding(12.dp), color = CoralRed, fontWeight = FontWeight.Bold)
             }
             Button(
                 onClick = {
@@ -1666,7 +1666,7 @@ fun DriverHomeScreen(navController: NavController, activity: MainActivity) {
                 elevation = CardDefaults.cardElevation(15.dp)
             ) {
                 Column(modifier = Modifier.padding(20.dp)) {
-                    Text("Navigating to Patient", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = DeepPurple)
+                    Text("Navigating to Patient", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = CoralRed)
                     Spacer(modifier = Modifier.height(8.dp))
                     Text("Patient: ${currentEmergency?.patient_name} (${currentEmergency?.patient_mobile})")
                     Button(
@@ -1699,7 +1699,7 @@ fun DriverHomeScreen(navController: NavController, activity: MainActivity) {
                 elevation = CardDefaults.cardElevation(15.dp)
             ) {
                 Column(modifier = Modifier.padding(20.dp)) {
-                    Text("Patient Secure. Proceed to Hospital.", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = DeepPurple)
+                    Text("Patient Secure. Proceed to Hospital.", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = CoralRed)
                     Spacer(modifier = Modifier.height(16.dp))
                     Button(
                         onClick = {

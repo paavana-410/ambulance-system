@@ -91,8 +91,8 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun AppTheme(content: @Composable () -> Unit) {
-    val RedPrimary = Color(0xFFFF4D4D)
-    val LightGray = Color(0xFFF0F2F5)
+    val RedPrimary = CoralRed
+    val LightGray = LightBg
     
     val colorScheme = lightColorScheme(
         primary = RedPrimary,
@@ -100,7 +100,7 @@ fun AppTheme(content: @Composable () -> Unit) {
         background = LightGray,
         surface = Color.White,
         onPrimary = Color.White,
-        onBackground = Color.Black
+        onBackground = DarkGrey
     )
     
     MaterialTheme(
@@ -175,9 +175,10 @@ fun t(en: String, hi: String, kn: String): String {
     }
 }
 
-val DeepPurple = Color(0xFF30336B)
-val LightBlue = Color(0xFFEBF0FE)
-val ResQGRed = Color(0xFFD32F2F)
+val CoralRed = Color(0xFFFF4D6D)
+val LightBg = Color(0xFFF8F9FA)
+val DarkGrey = Color(0xFF333333)
+val ResQGRed = CoralRed
 
 @Composable
 fun AppNavigation(activity: MainActivity) {
@@ -232,11 +233,11 @@ fun SplashScreen(navController: NavController, viewModel: AuthViewModel) {
     }
     
     Box(
-        modifier = Modifier.fillMaxSize().background(DeepPurple),
+        modifier = Modifier.fillMaxSize().background(CoralRed),
         contentAlignment = Alignment.Center
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("ResQG", fontSize = 64.sp, fontWeight = FontWeight.ExtraBold, color = ResQGRed, fontFamily = FontFamily.Serif)
+            Text("ResQG", fontSize = 64.sp, fontWeight = FontWeight.ExtraBold, color = Color.White, fontFamily = FontFamily.Serif)
             Text("Driver Professional", color = Color.White, fontSize = 20.sp)
             Spacer(modifier = Modifier.height(24.dp))
             CircularProgressIndicator(color = Color.White)
@@ -274,30 +275,6 @@ fun SplashScreen(navController: NavController, viewModel: AuthViewModel) {
     }
 }
 
-
-
-// ==========================
-// PATIENT FLOW
-// ==========================
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// ==========================
-// DRIVER FLOW
-// ==========================
-
 @Composable
 fun DriverLoginScreen(navController: NavController, viewModel: AuthViewModel) {
     var username by remember { mutableStateOf("") }
@@ -305,18 +282,19 @@ fun DriverLoginScreen(navController: NavController, viewModel: AuthViewModel) {
     val status = viewModel.authStatus
 
     Column(
-        modifier = Modifier.fillMaxSize().background(DeepPurple).padding(24.dp),
+        modifier = Modifier.fillMaxSize().background(LightBg).padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
         Text("ResQG Driver", fontSize = 42.sp, fontWeight = FontWeight.ExtraBold, color = ResQGRed, fontFamily = FontFamily.Serif)
-        Text("Login to your dashboard", color = Color.White, fontSize = 16.sp)
+        Text("Login to your dashboard", color = DarkGrey, fontSize = 16.sp)
         Spacer(modifier = Modifier.height(32.dp))
         
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(15.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White)
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            elevation = CardDefaults.cardElevation(8.dp)
         ) {
             Column(modifier = Modifier.padding(24.dp)) {
                 OutlinedTextField(
@@ -344,7 +322,7 @@ fun DriverLoginScreen(navController: NavController, viewModel: AuthViewModel) {
                 Button(
                     onClick = { viewModel.loginDriver(username, password) },
                     modifier = Modifier.fillMaxWidth().height(50.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = DeepPurple),
+                    colors = ButtonDefaults.buttonColors(containerColor = CoralRed),
                     enabled = status !is AuthStatus.Loading && username.isNotBlank() && password.isNotBlank()
                 ) {
                     if (status is AuthStatus.Loading) {
@@ -359,7 +337,7 @@ fun DriverLoginScreen(navController: NavController, viewModel: AuthViewModel) {
                     onClick = { navController.navigate("driver_register") },
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Don't have an account? Register here", color = DeepPurple)
+                    Text("Don't have an account? Register here", color = CoralRed)
                 }
             }
         }
@@ -376,25 +354,26 @@ fun DriverRegisterScreen(navController: NavController, viewModel: AuthViewModel)
     val status = viewModel.authStatus
 
     Column(
-        modifier = Modifier.fillMaxSize().background(DeepPurple).padding(24.dp),
+        modifier = Modifier.fillMaxSize().background(LightBg).padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Top
     ) {
         Spacer(modifier = Modifier.height(40.dp))
-        Text("Driver Registration", fontSize = 32.sp, fontWeight = FontWeight.Bold, color = Color.White)
+        Text("Driver Registration", fontSize = 32.sp, fontWeight = FontWeight.Bold, color = CoralRed)
         Spacer(modifier = Modifier.height(24.dp))
         
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(15.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White)
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            elevation = CardDefaults.cardElevation(8.dp)
         ) {
             Column(modifier = Modifier.padding(24.dp)) {
                 OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Full Name") }, modifier = Modifier.fillMaxWidth())
                 OutlinedTextField(value = username, onValueChange = { username = it }, label = { Text("Username") }, modifier = Modifier.fillMaxWidth())
                 OutlinedTextField(value = password, onValueChange = { password = it }, label = { Text("Password") }, modifier = Modifier.fillMaxWidth(), visualTransformation = PasswordVisualTransformation())
                 OutlinedTextField(value = ambulanceNo, onValueChange = { ambulanceNo = it }, label = { Text("Ambulance No.") }, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(value = phone, onValueChange = { phone = it }, label = { Text("Phone Number") }, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(value = phone, onValueChange = { phone = it }, label = { Text("Phone Number") }, modifier = Modifier.fillMaxWidth(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone))
                 
                 if (status is AuthStatus.Error) {
                     Text(status.message, color = ResQGRed, modifier = Modifier.padding(top = 8.dp))
@@ -418,7 +397,7 @@ fun DriverRegisterScreen(navController: NavController, viewModel: AuthViewModel)
                     onClick = { navController.navigate("driver_login") },
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Already registered? Login here", color = DeepPurple)
+                    Text("Already registered? Login here", color = CoralRed)
                 }
             }
         }
@@ -574,7 +553,7 @@ fun DriverHomeScreen(navController: NavController, activity: MainActivity, viewM
                                                         addWaypoints: false,
                                                         draggableWaypoints: false,
                                                         fitSelectedRoutes: true,
-                                                        lineOptions: { styles: [{ color: '#f03', weight: 6 }] }
+                                                        lineOptions: { styles: [{ color: '#FF4D6D', weight: 6 }] }
                                                     }).addTo(map);
                                                 } else {
                                                     routingControl.setWaypoints([L.latLng(dLat, dLon), L.latLng(pLat, pLon)]);
@@ -632,12 +611,13 @@ fun DriverHomeScreen(navController: NavController, activity: MainActivity, viewM
             }
             
             Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-                Card(shape = RoundedCornerShape(12.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
-                    Text(if(isAccepted) "ON MISSION" else "AVAILABLE", modifier = Modifier.padding(12.dp), color = DeepPurple, fontWeight = FontWeight.Bold)
+                Card(shape = RoundedCornerShape(12.dp), colors = CardDefaults.cardColors(containerColor = Color.White), elevation = CardDefaults.cardElevation(8.dp)) {
+                    Text(if(isAccepted) "ON MISSION" else "AVAILABLE", modifier = Modifier.padding(12.dp), color = CoralRed, fontWeight = FontWeight.Bold)
                 }
                 Button(
                     onClick = { viewModel.signOut() },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.DarkGray)
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.DarkGray),
+                    shape = RoundedCornerShape(10.dp)
                 ) {
                     Text("Logout")
                 }
@@ -671,7 +651,8 @@ fun DriverHomeScreen(navController: NavController, activity: MainActivity, viewM
                                 }
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32)),
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(12.dp)
                         ) { Text("ACCEPT") }
                         Spacer(modifier = Modifier.width(16.dp))
                         Button(
@@ -682,7 +663,8 @@ fun DriverHomeScreen(navController: NavController, activity: MainActivity, viewM
                                 }
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = ResQGRed),
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(12.dp)
                         ) { Text("DECLINE") }
                     }
                 }
@@ -696,7 +678,7 @@ fun DriverHomeScreen(navController: NavController, activity: MainActivity, viewM
                 elevation = CardDefaults.cardElevation(15.dp)
             ) {
                 Column(modifier = Modifier.padding(20.dp)) {
-                    Text("Navigating to Patient", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = DeepPurple)
+                    Text("Navigating to Patient", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = CoralRed)
                     Spacer(modifier = Modifier.height(8.dp))
                     Text("Patient: ${currentEmergency?.patient_name} (${currentEmergency?.patient_mobile})")
                     Button(
@@ -704,7 +686,8 @@ fun DriverHomeScreen(navController: NavController, activity: MainActivity, viewM
                             val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:${currentEmergency?.patient_mobile}"))
                             activity.startActivity(intent)
                         },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color.LightGray)
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.LightGray),
+                        shape = RoundedCornerShape(10.dp)
                     ) { Text("Call Patient", color = Color.Black) }
                     
                     Spacer(modifier = Modifier.height(16.dp))
@@ -716,7 +699,8 @@ fun DriverHomeScreen(navController: NavController, activity: MainActivity, viewM
                             }
                         },
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32)),
-                        modifier = Modifier.fillMaxWidth().height(50.dp)
+                        modifier = Modifier.fillMaxWidth().height(50.dp),
+                        shape = RoundedCornerShape(12.dp)
                     ) { Text("✅ PATIENT PICKED UP") }
                 }
             }
@@ -730,7 +714,7 @@ fun DriverHomeScreen(navController: NavController, activity: MainActivity, viewM
             ) {
                 Column(modifier = Modifier.padding(20.dp)) {
                     if (selectedHospital == null) {
-                        Text("Select Nearest Hospital", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = DeepPurple)
+                        Text("Select Nearest Hospital", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = CoralRed)
                         Spacer(modifier = Modifier.height(10.dp))
                         LazyColumn(modifier = Modifier.heightIn(max = 200.dp)) {
                             items(hospitals) { hospital ->
@@ -750,7 +734,8 @@ fun DriverHomeScreen(navController: NavController, activity: MainActivity, viewM
                                             selectedHospital = hospital
                                         }
                                     },
-                                    colors = CardDefaults.cardColors(containerColor = LightBlue)
+                                    colors = CardDefaults.cardColors(containerColor = LightBg),
+                                    shape = RoundedCornerShape(12.dp)
                                 ) {
                                     Text(hospital.name, modifier = Modifier.padding(12.dp), fontWeight = FontWeight.Medium)
                                 }
@@ -772,7 +757,8 @@ fun DriverHomeScreen(navController: NavController, activity: MainActivity, viewM
                                 }
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = ResQGRed),
-                            modifier = Modifier.fillMaxWidth().height(50.dp)
+                            modifier = Modifier.fillMaxWidth().height(50.dp),
+                            shape = RoundedCornerShape(12.dp)
                         ) { Text("🏁 COMPLETE MISSION") }
                     }
                 }

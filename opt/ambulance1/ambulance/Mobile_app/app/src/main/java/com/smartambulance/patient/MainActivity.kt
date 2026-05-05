@@ -1349,7 +1349,7 @@ fun DriverHomeScreen(navController: NavController, activity: MainActivity) {
                 elevation = CardDefaults.cardElevation(15.dp)
             ) {
                 Column(modifier = Modifier.padding(20.dp)) {
-                    Text("Patient Secure. Proceed to Hospital.", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = DeepPurple)
+                    Text("Patient Secure. Proceed to Hospital.", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = CoralRed)
                     Spacer(modifier = Modifier.height(16.dp))
                     Button(
                         onClick = {
