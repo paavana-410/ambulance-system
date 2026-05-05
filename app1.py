@@ -161,10 +161,14 @@ def register_driver():
     password     = data.get("password") or ""
     ambulance_no = (data.get("ambulance_no") or "").strip()
     phone        = (data.get("phone") or "").strip()
+    upi_id       = (data.get("upi_id") or "").strip()
 
     # Basic server-side validation
-    if not all([driver_name, username, password, ambulance_no, phone]):
-        return jsonify({"status": "error", "message": "All fields are required including phone number"}), 400
+    if not all([driver_name, username, password, ambulance_no, phone, upi_id]):
+        return jsonify({"status": "error", "message": "All fields are required including UPI ID"}), 400
+    
+    if "@" not in upi_id:
+        return jsonify({"status": "error", "message": "Invalid UPI ID format"}), 400
     if len(password) < 6:
         return jsonify({"status": "error", "message": "Password must be at least 6 characters"}), 400
 
@@ -174,9 +178,9 @@ def register_driver():
     try:
         cur = conn.cursor()
         cur.execute(
-            "INSERT INTO drivers(driver_name, username, password_hash, ambulance_no, phone) "
-            "VALUES(%s, %s, %s, %s, %s)",
-            (driver_name, username, pw_hash, ambulance_no, phone),
+            "INSERT INTO drivers(driver_name, username, password_hash, ambulance_no, phone, upi_id) "
+            "VALUES(%s, %s, %s, %s, %s, %s)",
+            (driver_name, username, pw_hash, ambulance_no, phone, upi_id),
         )
         conn.commit()
     except Exception:
@@ -307,7 +311,7 @@ def get_status():
     try:
         cur = conn.cursor(dictionary=True)
         cur.execute(
-            "SELECT e.*, d.driver_name, d.ambulance_no, d.phone AS driver_phone "
+            "SELECT e.*, d.driver_name, d.ambulance_no, d.phone AS driver_phone, d.upi_id AS driver_upi "
             "FROM emergencies e LEFT JOIN drivers d ON e.driver_id = d.id "
             "WHERE e.emergency_id = %s",
             (eid,),
@@ -325,6 +329,7 @@ def get_status():
         "driver_name":     row["driver_name"],
         "ambulance_no":    row["ambulance_no"],
         "driver_phone":    row.get("driver_phone"),
+        "driver_upi":      row.get("driver_upi"),
         "dest_name":       row["dest_name"],
         "lat":             row["lat"],
         "lon":             row["lon"],

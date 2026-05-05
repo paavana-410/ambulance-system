@@ -68,9 +68,9 @@ class AuthViewModel : ViewModel() {
         }
     }
 
-    fun registerDriver(name: String, username: String, password: String, ambulanceNo: String, phone: String) {
-        if (name.isBlank() || username.isBlank() || password.isBlank() || ambulanceNo.isBlank() || phone.isBlank()) {
-            authStatus = AuthStatus.Error("Please fill all fields.")
+    fun registerDriver(name: String, username: String, password: String, ambulanceNo: String, phone: String, upiId: String) {
+        if (name.isBlank() || username.isBlank() || password.isBlank() || ambulanceNo.isBlank() || phone.isBlank() || upiId.isBlank()) {
+            authStatus = AuthStatus.Error("Please fill all fields including UPI ID.")
             return
         }
 
@@ -78,7 +78,7 @@ class AuthViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 val response = RetrofitClient.instance.registerDriver(
-                    com.smartambulance.patient.network.DriverRegisterPayload(name, username, password, ambulanceNo, phone)
+                    com.smartambulance.patient.network.DriverRegisterPayload(name, username, password, ambulanceNo, phone, upiId)
                 )
                 if (response.status == "success") {
                     // After registration, we don't automatically log in to match web flow (usually redirects to login)

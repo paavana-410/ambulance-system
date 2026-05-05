@@ -26,9 +26,11 @@ data class EmergencyStatusResponse(
     val driver_name: String?,
     val ambulance_no: String?,
     val driver_phone: String?,
+    val driver_upi: String?,
     val dest_lat: Double?,
     val dest_lon: Double?,
-    val dest_name: String?
+    val dest_name: String?,
+    val fare: Double?
 )
 
 data class AmbulanceLocationResponse(
@@ -66,7 +68,7 @@ data class DriverLoginResponse(
 
 data class DriverRegisterPayload(
     val driver_name: String, val username: String, val password: String,
-    val ambulance_no: String, val phone: String
+    val ambulance_no: String, val phone: String, val upi_id: String
 )
 
 data class SimpleResponse(

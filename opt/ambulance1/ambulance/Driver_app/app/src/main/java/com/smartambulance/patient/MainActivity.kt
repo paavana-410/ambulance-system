@@ -351,6 +351,7 @@ fun DriverRegisterScreen(navController: NavController, viewModel: AuthViewModel)
     var password by remember { mutableStateOf("") }
     var ambulanceNo by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
+    var upiId by remember { mutableStateOf("") }
     val status = viewModel.authStatus
 
     Column(
@@ -374,6 +375,7 @@ fun DriverRegisterScreen(navController: NavController, viewModel: AuthViewModel)
                 OutlinedTextField(value = password, onValueChange = { password = it }, label = { Text("Password") }, modifier = Modifier.fillMaxWidth(), visualTransformation = PasswordVisualTransformation())
                 OutlinedTextField(value = ambulanceNo, onValueChange = { ambulanceNo = it }, label = { Text("Ambulance No.") }, modifier = Modifier.fillMaxWidth())
                 OutlinedTextField(value = phone, onValueChange = { phone = it }, label = { Text("Phone Number") }, modifier = Modifier.fillMaxWidth(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone))
+                OutlinedTextField(value = upiId, onValueChange = { upiId = it }, label = { Text("UPI ID (e.g. name@ybl)") }, modifier = Modifier.fillMaxWidth(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email))
                 
                 if (status is AuthStatus.Error) {
                     Text(status.message, color = ResQGRed, modifier = Modifier.padding(top = 8.dp))
@@ -381,7 +383,13 @@ fun DriverRegisterScreen(navController: NavController, viewModel: AuthViewModel)
 
                 Spacer(modifier = Modifier.height(24.dp))
                 Button(
-                    onClick = { viewModel.registerDriver(name, username, password, ambulanceNo, phone) },
+                    onClick = { 
+                        if (!upiId.contains("@")) {
+                            Toast.makeText(activity, "Please enter a valid UPI ID", Toast.LENGTH_SHORT).show()
+                        } else {
+                            viewModel.registerDriver(name, username, password, ambulanceNo, phone, upiId) 
+                        }
+                    },
                     modifier = Modifier.fillMaxWidth().height(50.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = ResQGRed),
                     enabled = status !is AuthStatus.Loading

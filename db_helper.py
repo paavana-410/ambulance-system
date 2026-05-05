@@ -107,10 +107,18 @@ def init_db():
                 password_hash VARCHAR(255) NOT NULL,
                 ambulance_no  VARCHAR(255),
                 phone         VARCHAR(50),
+                upi_id        VARCHAR(255),
                 availability  BOOLEAN DEFAULT TRUE,
                 created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
+
+        # Add upi_id column if it doesn't exist (Migration)
+        try:
+            cur.execute("ALTER TABLE drivers ADD COLUMN upi_id VARCHAR(255)")
+            conn.commit()
+        except:
+            pass
 
         # ── Emergencies ───────────────────────────────────────────────────────
         cur.execute(f"""

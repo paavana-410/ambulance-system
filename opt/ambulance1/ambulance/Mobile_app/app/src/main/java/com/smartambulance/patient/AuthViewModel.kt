@@ -41,6 +41,38 @@ class AuthViewModel : ViewModel() {
         }
     }
 
+    fun registerDriver(name: String, username: String, password: String, ambulanceNo: String, phone: String, upiId: String) {
+        if (name.isBlank() || username.isBlank() || password.isBlank() || ambulanceNo.isBlank() || phone.isBlank() || upiId.isBlank()) {
+            authStatus = AuthStatus.Error("Please fill all fields including UPI ID.")
+            return
+        }
+        if (otpRequestInFlight) {
+            authStatus = AuthStatus.Error("OTP request already in progress. Please wait.")
+            return
+        }
+
+        authStatus = AuthStatus.Loading
+        viewModelScope.launch {
+            try {
+                val response = RetrofitClient.instance.registerDriver(
+                    com.smartambulance.patient.network.DriverRegisterPayload(name, username, password, ambulanceNo, phone, upiId)
+                )
+                if (response.status == "success") {
+                    UserSession.role = "patient"
+                    UserSession.email = email
+                    pendingEmail = null
+                    timerJob?.cancel()
+                    timeLeft = 0
+                    authStatus = AuthStatus.Authenticated("patient", UserSession.isPatientLoggedIn)
+                } else {
+                    authStatus = AuthStatus.Error(response.message ?: "Registration failed.")
+                }
+            } catch (e: Exception) {
+                authStatus = AuthStatus.Error("Network error. Please try again.")
+            }
+        }
+    }
+
     fun sendEmailOtp(email: String) {
         val cleanEmail = email.trim().lowercase()
         if (!isValidEmail(cleanEmail)) {

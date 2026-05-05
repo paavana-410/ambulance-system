@@ -770,6 +770,7 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
     var driverName by remember { mutableStateOf("-") }
     var ambulanceNo by remember { mutableStateOf("-") }
     var driverPhone by remember { mutableStateOf<String?>(null) }
+    var driverUpi by remember { mutableStateOf<String?>(null) }
     var lat by remember { mutableStateOf(0.0) }
     var lon by remember { mutableStateOf(0.0) }
     var distance by remember { mutableStateOf("-") }
@@ -793,6 +794,7 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
                 ambulanceNo = status.ambulance_no ?: "-"
                 destName = status.dest_name
                 driverPhone = status.driver_phone
+                driverUpi = status.driver_upi
                 fare = status.fare ?: 0.0
                 patientLat = status.lat ?: 0.0
                 patientLon = status.lon ?: 0.0
@@ -998,11 +1000,24 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
                         Button(
                             onClick = {
                                 try {
+                                    val currentDriverUpi = driverUpi ?: ""
+                                    if (currentDriverUpi.isBlank() || !currentDriverUpi.contains("@")) {
+                                        Toast.makeText(activity, "Payment not available. Driver UPI not configured.", Toast.LENGTH_LONG).show()
+                                        return@Button
+                                    }
+                                    
                                     val formattedFare = String.format("%.2f", fare)
-                                    val upiUri = "upi://pay?pa=resqgo@upi&pn=ResQGo&am=$formattedFare&cu=INR&tn=ResQGoRide&tr=TXID${System.currentTimeMillis()}"
+                                    val upiUri = "upi://pay?pa=$currentDriverUpi&pn=$driverName&am=$formattedFare&cu=INR&tn=Ambulance Fare - ResQGo"
                                     val intent = Intent(Intent.ACTION_VIEW, Uri.parse(upiUri))
-                                    val chooser = Intent.createChooser(intent, "Pay via PhonePe or any UPI App")
-                                    activity.startActivity(chooser)
+                                    val chooser = Intent.createChooser(intent, "Pay via PhonePe, GPay, or Paytm")
+                                    
+                                    // Check if there's an app to handle this intent
+                                    val packageManager = activity.packageManager
+                                    if (intent.resolveActivity(packageManager) != null) {
+                                        activity.startActivity(chooser)
+                                    } else {
+                                        Toast.makeText(activity, "No UPI app found. Please install PhonePe or GPay.", Toast.LENGTH_LONG).show()
+                                    }
                                 } catch (e: Exception) {
                                     Toast.makeText(activity, "Payment failed: ${e.message}", Toast.LENGTH_SHORT).show()
                                 }
