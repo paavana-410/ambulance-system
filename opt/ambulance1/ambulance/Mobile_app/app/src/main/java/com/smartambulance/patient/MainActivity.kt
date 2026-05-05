@@ -319,9 +319,9 @@ fun LanguageScreen(navController: NavController) {
         Spacer(modifier = Modifier.height(40.dp))
         
         listOf(
-            Triple(0, "English", "English"),
-            Triple(1, "Hindi (हिंदी)", "हिंदी"),
-            Triple(2, "Kannada (ಕನ್ನಡ)", "ಕನ್ನಡ")
+            Triple(0, "English 📖", "English"),
+            Triple(1, "Hindi (हिंदी) 📖", "हिंदी"),
+            Triple(2, "Kannada (ಕನ್ನಡ) 📖", "ಕನ್ನಡ")
         ).forEach { lang ->
             Button(
                 onClick = { 

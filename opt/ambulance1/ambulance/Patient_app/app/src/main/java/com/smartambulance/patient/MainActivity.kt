@@ -367,13 +367,13 @@ fun LanguageScreen(navController: NavController) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Text("Choose Language", fontSize = 28.sp, fontWeight = FontWeight.Bold, color = Color.White)
+        Text("Choose Language", fontSize = 28.sp, fontWeight = FontWeight.Bold, color = Color.DarkGray)
         Spacer(modifier = Modifier.height(40.dp))
         
         listOf(
-            Triple(0, "English", "English"),
-            Triple(1, "Hindi (हिंदी)", "हिंदी"),
-            Triple(2, "Kannada (ಕನ್ನಡ)", "ಕನ್ನಡ")
+            Triple(0, "English 📖", "English"),
+            Triple(1, "Hindi (हिंदी) 📖", "हिंदी"),
+            Triple(2, "Kannada (ಕನ್ನಡ) 📖", "ಕನ್ನಡ")
         ).forEach { lang ->
             Button(
                 onClick = { 
@@ -389,7 +389,7 @@ fun LanguageScreen(navController: NavController) {
         }
         Spacer(modifier = Modifier.height(24.dp))
         TextButton(onClick = { navController.navigate("login") }) {
-            Text("Already an existing user? Login here", color = Color.White)
+            Text("Already an existing user? Login here", color = Color.DarkGray)
         }
     }
 }
