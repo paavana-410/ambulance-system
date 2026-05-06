@@ -1122,9 +1122,9 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
     var payTimer by remember { mutableStateOf(30) }
     
     // Payment Pending Timer Logic
-    LaunchedEffect(emergencyState) {
+    LaunchedEffect(emergencyState, UserSession.paymentStatus) {
         if (emergencyState == "completed" && UserSession.paymentStatus == "Pending") {
-            while (payTimer > 0) {
+            while (payTimer > 0 && UserSession.paymentStatus == "Pending") {
                 kotlinx.coroutines.delay(1000)
                 payTimer--
             }
@@ -1152,6 +1152,7 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
                     UserSession.paymentStatus = "Paid"
                     UserSession.paymentMethod = status.payment_method ?: "QR"
                     UserSession.isPendingPayment = false
+                    payTimer = 0 // Stop the timer
                 }
 
                 if (emergencyState == "declined") {
@@ -1377,11 +1378,20 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
         ) {
             Column(modifier = Modifier.padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 if(emergencyState == "completed") {
-                    Text("✅ Ride Completed", fontWeight = FontWeight.ExtraBold, fontSize = 24.sp, color = Color(0xFF155724))
+                    // Main Header Logic
+                    if (UserSession.paymentStatus == "Paid" || UserSession.paymentStatus == "AutoPay Processed") {
+                        Text("✅ Ride Completed", fontWeight = FontWeight.ExtraBold, fontSize = 24.sp, color = Color(0xFF155724))
+                    } else {
+                        Text("Ride Finished", fontWeight = FontWeight.ExtraBold, fontSize = 24.sp, color = CoralRed)
+                    }
+
                     Spacer(modifier = Modifier.height(16.dp))
                     Text("Total Fare: ₹$fare", fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, color = CoralRed)
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text("Please complete the payment to end session", fontSize = 14.sp, color = Color.Gray)
+                    
+                    if (UserSession.paymentStatus != "Paid" && UserSession.paymentStatus != "AutoPay Processed") {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text("Please complete the payment to end session", fontSize = 14.sp, color = Color.Gray)
+                    }
 
                     Spacer(modifier = Modifier.height(20.dp))
 
@@ -1396,10 +1406,20 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
                                 Text("Payment was automatically processed after pending period.", fontSize = 12.sp, color = Color.Gray, textAlign = TextAlign.Center)
                             }
                         }
+                    } else if (UserSession.paymentStatus == "Paid") {
+                        Card(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color(0xFFE8F5E9)),
+                            shape = RoundedCornerShape(10.dp)
+                        ) {
+                            Column(modifier = Modifier.padding(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                                val successMethodMsg = if (UserSession.paymentMethod == "QR") "Payment Successful using QR Code" else "Payment Successful"
+                                Text("✅ $successMethodMsg", fontWeight = FontWeight.Bold, color = Color(0xFF2E7D32))
+                            }
+                        }
                     } else if (UserSession.paymentStatus == "Pending") {
-                        if (payTimer > 0) {
-                            Text("Waiting for payment... $payTimer s", color = CoralRed, fontWeight = FontWeight.Bold)
-                        } else {
+                        // Only show pending info if initial 30s timer expired
+                        if (payTimer <= 0) {
                             Card(
                                 modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
                                 colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF3E0)),
@@ -1412,11 +1432,14 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
                                     Text("Since you did not pay now, you can pay anytime within 3 days or it will autopay on the third day.", fontSize = 11.sp, color = Color.Gray, textAlign = TextAlign.Center)
                                 }
                             }
+                        } else {
+                            // Initial 30s window - Just show waiting text
+                            Text("Waiting for payment... $payTimer s", color = CoralRed, fontWeight = FontWeight.Bold)
                         }
                         
                         Spacer(modifier = Modifier.height(12.dp))
 
-                        // Dynamic UPI Pay Now button (ALWAYS VISIBLE if Pending)
+                        // Pay Now button is visible during BOTH initial 30s and subsequent 3-day pending state
                         Button(
                             onClick = {
                                 try {
@@ -1454,8 +1477,6 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
                                 Text("PAY NOW VIA PHONEPE", color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 17.sp)
                             }
                         }
-                    } else if (UserSession.paymentStatus == "Paid") {
-                        Text("✅ Payment Successful", fontWeight = FontWeight.Bold, color = Color(0xFF2E7D32))
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
@@ -1543,17 +1564,18 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
                     ) {
                         Text("✅", fontSize = 60.sp)
                         Spacer(modifier = Modifier.height(16.dp))
+                        val header = if (UserSession.paymentMethod == "QR") "QR Code Payment Successful" else "Payment Successful"
                         Text(
-                            "Payment Successful",
+                            header,
                             fontSize = 24.sp,
                             fontWeight = FontWeight.ExtraBold,
                             color = Color(0xFF2E7D32)
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         val successMsg = if (UserSession.paymentMethod == "QR") {
-                            "Payment Successful using QR Code and Ride Completed"
+                            "Ride Completed"
                         } else {
-                            "Payment Successful and Ride Completed"
+                            "Ride Completed"
                         }
                         Text(
                             successMsg,
