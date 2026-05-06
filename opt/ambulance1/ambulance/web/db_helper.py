@@ -131,6 +131,7 @@ def init_db():
                 driver_id       INT,
                 ride_distance   FLOAT DEFAULT 0.0,
                 fare            FLOAT DEFAULT 0.0,
+                payment_status  VARCHAR(50) DEFAULT 'Pending',
                 FOREIGN KEY (driver_id) REFERENCES drivers(id)
             )
         """)

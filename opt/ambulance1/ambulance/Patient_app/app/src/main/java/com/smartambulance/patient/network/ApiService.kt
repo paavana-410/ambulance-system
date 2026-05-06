@@ -32,7 +32,8 @@ data class EmergencyStatusResponse(
     val dest_name: String?,
     val fare: Double?,
     val lat: Double?,
-    val lon: Double?
+    val lon: Double?,
+    val payment_status: String?
 )
 
 data class AmbulanceLocationResponse(

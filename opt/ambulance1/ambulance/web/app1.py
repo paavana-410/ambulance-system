@@ -329,7 +329,8 @@ def get_status():
         "lat":             row["lat"],
         "lon":             row["lon"],
         "fare":            row.get("fare", 0.0),
-        "ride_distance":   row.get("ride_distance", 0.0)
+        "ride_distance":   row.get("ride_distance", 0.0),
+        "payment_status":  row.get("payment_status", "Pending")
     })
 
 
@@ -642,7 +643,7 @@ def complete_mission():
 
         # 3. Update Database
         cur.execute(
-            "UPDATE emergencies SET status='completed', ride_distance=%s, fare=%s "
+            "UPDATE emergencies SET status='completed', ride_distance=%s, fare=%s, payment_status='Pending' "
             "WHERE emergency_id=%s",
             (round(dist, 2), round(total_fare, 2), mission["emergency_id"]),
         )
@@ -724,6 +725,35 @@ def sys_status():
 
 @app.route("/api/activate_emergency_mode", methods=["POST"])
 def activate():
+    return jsonify({"status": "success"})
+
+
+@app.route("/api/qr_payment_success", methods=["POST"])
+def qr_payment_success():
+    data = request.get_json(silent=True) or {}
+    eid = data.get("emergency_id")
+    if not eid:
+        return jsonify({"status": "error", "message": "emergency_id required"}), 400
+    
+    conn = get_db()
+    try:
+        cur = conn.cursor()
+        cur.execute("UPDATE emergencies SET payment_status='Paid' WHERE emergency_id=%s", (eid,))
+        conn.commit()
+        
+        # Broadcast to Driver Dashboard and Patient App
+        socketio.emit("payment_successful", {
+            "emergency_id": eid,
+            "status": "Paid",
+            "message": "Payment Successful using QR Code"
+        })
+        print(f"💰 QR Payment Successful for ID: {eid}")
+    except Exception as e:
+        print(f"❌ Payment Update Error: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+    finally:
+        conn.close()
+    
     return jsonify({"status": "success"})
 
 

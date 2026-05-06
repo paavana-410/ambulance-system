@@ -621,14 +621,24 @@ style="margin-top:8px;width:100%;padding:12px;background:#2ecc71;color:white;bor
         <div class="qr-section">
             <p style="font-size: 14px; color: #888;">Patient can scan this QR code to pay</p>
             <img src="/static/img/qr.jpg" alt="Payment QR Code" class="qr-code-img">
+            
+            <div id="payment-status-message" style="margin-top:10px; font-weight:bold; display:none;">
+                <span style="color:#2ecc71;">✅ Payment Successful!</span>
+            </div>
+            
+            <!-- FOR DEMO: Button to simulate QR scan by patient -->
+            <button onclick="simulateQRPayment()" style="margin-top:10px; font-size:10px; opacity:0.5; background:none; border:1px dashed #ccc; cursor:pointer;">
+                [Simulate QR Scan]
+            </button>
         </div>
 
-        <button class="close-modal-btn" onclick="closeMissionModal()">Back to Dashboard</button>
+        <button id="close-modal-btn" class="close-modal-btn" onclick="closeMissionModal()">Back to Dashboard</button>
     </div>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
 <script src="/static/js/app.js"></script>
 <script>
 

@@ -26,7 +26,22 @@ let movementIndex = 0;
 let movementInterval = null;
 
 // Fixed test location (Bangalore)
+// Fixed test location (Bangalore)
 let currentLocation = { lat: 13.026632, lon: 77.571419 };
+
+// Socket.IO for real-time updates
+const socket = io(BASE_URL);
+
+socket.on('connect', () => {
+    console.log('🔌 Connected to Socket.IO server');
+});
+
+socket.on('payment_successful', (data) => {
+    console.log('💰 Payment Success Event:', data);
+    if (currentMission && data.emergency_id == currentMission.emergency_id) {
+        handleQRPaymentSuccess();
+    }
+});
 
 
 
@@ -1097,4 +1112,46 @@ function activateEmergencyMode() {
         }
     })
     .catch(err => console.error("Hardware activation error:", err));
+}
+
+// -----------------------------
+// QR PAYMENT HANDLING
+// -----------------------------
+
+function handleQRPaymentSuccess() {
+    const msgArea = document.getElementById('payment-status-message');
+    if(msgArea) msgArea.style.display = 'block';
+    
+    // Show the "Mission Cleared" alert as requested in requirements
+    setTimeout(() => {
+        alert("✅ Payment Successful\n\nMission Cleared! You are now Available and Ready for the next ride.");
+    }, 500);
+}
+
+function simulateQRPayment() {
+    if (!currentMission) return;
+    console.log("🛠️ Simulating QR Payment for:", currentMission.emergency_id);
+    
+    fetch(`${BASE_URL}/api/qr_payment_success`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ emergency_id: currentMission.emergency_id })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if(data.status === 'success') {
+            console.log("✅ Simulation request sent");
+        }
+    });
+}
+
+function closeMissionModal() {
+    document.getElementById('mission-complete-modal').style.display = 'none';
+    const msgArea = document.getElementById('payment-status-message');
+    if(msgArea) msgArea.style.display = 'none';
+    
+    // Reset indicators just in case
+    document.getElementById('status-indicator').textContent = 'Available';
+    document.getElementById('status-indicator').className = 'status-indicator status-available';
+    document.getElementById('your-status').textContent = 'Available';
 }

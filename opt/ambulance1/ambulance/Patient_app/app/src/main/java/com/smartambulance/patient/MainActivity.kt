@@ -1141,6 +1141,12 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
                 hospLat = status.dest_lat ?: 0.0
                 hospLon = status.dest_lon ?: 0.0
 
+                // REAL-TIME QR PAYMENT SYNC
+                if (status.payment_status == "Paid") {
+                    UserSession.paymentStatus = "Paid"
+                    UserSession.isPendingPayment = false
+                }
+
                 if (emergencyState == "declined") {
                     navController.popBackStack()
                     return@LaunchedEffect
@@ -1496,6 +1502,55 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
                                     Text("CALL", color = Color.White)
                                 }
                             }
+                        }
+                    }
+                }
+            }
+        }
+
+        // QR PAYMENT SUCCESS OVERLAY
+        if (UserSession.paymentStatus == "Paid") {
+            Box(
+                modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.5f)).clickable(enabled = false) {},
+                contentAlignment = Alignment.Center
+            ) {
+                Card(
+                    modifier = Modifier.fillMaxWidth().padding(24.dp),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    elevation = CardDefaults.cardElevation(15.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(32.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text("✅", fontSize = 60.sp)
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            "Payment Successful",
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Color(0xFF2E7D32)
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            "Payment Successful using QR Code and Ride Completed",
+                            fontSize = 16.sp,
+                            color = Color.Gray,
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(32.dp))
+                        Button(
+                            onClick = {
+                                UserSession.paymentStatus = ""
+                                UserSession.isPendingPayment = false
+                                navController.navigate("home") { popUpTo(0) }
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32)),
+                            modifier = Modifier.fillMaxWidth().height(55.dp),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Text("RETURN TO DASHBOARD", color = Color.White, fontWeight = FontWeight.Bold)
                         }
                     }
                 }
