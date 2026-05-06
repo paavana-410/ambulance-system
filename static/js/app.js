@@ -26,6 +26,11 @@ let routeCoordinates = [];
 let movementIndex = 0;
 let movementInterval = null;
 
+// Traffic Signal Priority Simulation
+let signal1 = null;
+let signal2 = null;
+let signal2State = 'RED';
+
 // Fixed test location - M.S. Ramaiah Hospital Bus Stop, Bangalore
 let currentLocation = { lat: 13.0299, lon: 77.5659 };
 
@@ -517,6 +522,11 @@ function startAmbulanceMovement(targetType){
 
         sendLocationToServer(currentLocation);
 
+        // TRAFFIC SIGNAL SIMULATION LOGIC
+        if (targetType === 'hospital' && hospitalMarker) {
+            simulateTrafficSignals(point.lat, point.lng);
+        }
+
         // REALISTIC SPEED: Only 1 step every 2 seconds means a realistic 2-3 min journey
         movementIndex += 1; 
 
@@ -569,6 +579,7 @@ function patientPickedUp() {
             document.getElementById('hospital-search-section').style.display = 'block';
 
             clearRoute();
+            clearSignals();
             searchHospitals();
         } else {
             alert("Server error confirming pickup");
@@ -889,7 +900,100 @@ function arrivedAtHospital() {
     console.log("🎉 Arrived at hospital");
     // ADDED: Clear route when mission completed
     clearRoute();
-    completeMission();
+    setTimeout(() => {
+        completeMission();
+    }, 2000); 
+}
+
+function simulateTrafficSignals(ambLat, ambLon) {
+    if (!currentMission || !hospitalMarker) return;
+
+    // Use currentMission coordinates for patient location
+    const patLat = currentMission.lat || (currentMission.patient_location ? currentMission.patient_location.lat : 0);
+    const patLon = currentMission.lon || (currentMission.patient_location ? currentMission.patient_location.lon : 0);
+    
+    if (!patLat || !hospitalMarker) return;
+    
+    const hospLoc = hospitalMarker.getLatLng();
+
+    if (!signal1 || !signal2) {
+        console.log("🚦 Creating Traffic Signals Simulation markers...");
+        
+        // Calculate dynamic positions on the route (35% and 75%)
+        const s1Lat = patLat + (hospLoc.lat - patLat) * 0.35;
+        const s1Lon = patLon + (hospLoc.lng - patLon) * 0.35;
+        const s2Lat = patLat + (hospLoc.lat - patLat) * 0.75;
+        const s2Lon = patLon + (hospLoc.lng - patLon) * 0.75;
+
+        // Signal 1: Fixed Green
+        signal1 = L.marker([s1Lat, s1Lon], {
+            icon: L.divIcon({
+                html: `<div style="background:#2ecc71; width:24px; height:24px; border-radius:50%; border:3px solid #333; box-shadow:0 0 10px rgba(46,204,113,0.8); display:flex; align-items:center; justify-content:center;">
+                        <div style="width:8px; height:8px; background:white; border-radius:50%; opacity:0.6;"></div>
+                      </div>
+                      <div class="signal-label" style="margin-top:5px; border-color:#2ecc71;">Signal 1: Priority Active</div>`,
+                className: 'custom-signal-icon',
+                iconSize: [120, 50],
+                iconAnchor: [60, 25]
+            }),
+            zIndexOffset: 2000
+        }).addTo(map);
+
+        // Signal 2: Dynamic Red/Green
+        signal2 = L.marker([s2Lat, s2Lon], {
+            icon: L.divIcon({
+                html: `<div id="s2-light" style="background:#e74c3c; width:24px; height:24px; border-radius:50%; border:3px solid #333; box-shadow:0 0 10px rgba(231,76,60,0.8); display:flex; align-items:center; justify-content:center;">
+                        <div style="width:8px; height:8px; background:white; border-radius:50%; opacity:0.6;"></div>
+                      </div>
+                      <div id="s2-status" class="signal-label" style="margin-top:5px; border-color:#e74c3c;">Signal 2: RED</div>`,
+                className: 'custom-signal-icon',
+                iconSize: [120, 50],
+                iconAnchor: [60, 25]
+            }),
+            zIndexOffset: 2000
+        }).addTo(map);
+    }
+
+    // Logic for Signal 2
+    const s2LatLng = signal2.getLatLng();
+    const dist = calculateDistance(ambLat, ambLon, s2LatLng.lat, s2LatLng.lng);
+    const s2Light = document.getElementById('s2-light');
+    const s2Status = document.getElementById('s2-status');
+    const banner = document.getElementById('corridor-banner');
+
+    if (dist < 500 && signal2State === 'RED') {
+        console.log("🚦 Signal 2 Priority Triggered! Distance:", dist);
+        signal2State = 'YELLOW';
+        if(s2Light) {
+            s2Light.style.background = '#f1c40f';
+            s2Light.style.boxShadow = '0 0 15px rgba(241,196,15,0.9)';
+        }
+        if(s2Status) {
+            s2Status.innerText = 'Signal 2: Transitioning...';
+            s2Status.style.borderColor = '#f1c40f';
+        }
+        
+        setTimeout(() => {
+            signal2State = 'GREEN';
+            if(s2Light) {
+                s2Light.style.background = '#2ecc71';
+                s2Light.style.boxShadow = '0 0 15px rgba(46,204,113,0.9)';
+            }
+            if(s2Status) {
+                s2Status.innerText = 'Signal 2: CLEARED';
+                s2Status.style.borderColor = '#2ecc71';
+            }
+            if(banner) banner.style.display = 'block';
+        }, 2500);
+    }
+}
+
+function clearSignals() {
+    if (signal1) { map.removeLayer(signal1); signal1 = null; }
+    if (signal2) { map.removeLayer(signal2); signal2 = null; }
+    const banner = document.getElementById('corridor-banner');
+    if(banner) banner.style.display = 'none';
+    signal2State = 'RED';
 }
 
 function calculateDistance(lat1, lon1, lat2, lon2) {
