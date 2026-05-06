@@ -963,7 +963,7 @@ fun HomeScreen(navController: NavController, activity: MainActivity) {
         Box(modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 60.dp)) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 // Persistent Pay Now if pending
-                if (UserSession.isPendingPayment || UserSession.paymentStatus == "AutoPay Processed") {
+                if (UserSession.isPendingPayment || UserSession.paymentStatus == "Pending" || UserSession.paymentStatus == "AutoPay Processed") {
                     Card(
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(bottom = 16.dp),
                         colors = CardDefaults.cardColors(
@@ -1217,6 +1217,7 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
                             <style>
                                 body, html, #map { height: 100vh; width: 100vw; margin: 0; padding: 0; overflow: hidden; background: #e0e0e0; }
                                 #loading { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-family: sans-serif; color: #666; z-index: 1000; }
+                                .leaflet-routing-container { display: none !important; }
                             </style>
                         </head>
                         <body>
@@ -1242,7 +1243,7 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
 
                                         if (!map) {
                                             map = L.map('map', {zoomControl: false, attributionControl: false}).setView([centerLat, centerLon], 15);
-                                            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { maxZoom: 19 }).addTo(map);
+                                            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
                                             
                                             ambulanceMarker = L.marker([centerLat, centerLon], {
                                                 icon: L.icon({
@@ -1301,13 +1302,11 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
                                             if (!routingControl) {
                                                 routingControl = L.Routing.control({
                                                     waypoints: waypoints,
-                                                    router: L.Routing.osrmv1({ serviceUrl: 'https://router.project-osrm.org/route/v1', profile: 'driving' }),
-                                                    routeWhileDragging: false,
                                                     show: false,
                                                     addWaypoints: false,
                                                     draggableWaypoints: false,
                                                     fitSelectedRoutes: true,
-                                                    lineOptions: { styles: [{ color: '#FF4D6D', opacity: 0.8, weight: 6 }] }
+                                                    lineOptions: { styles: [{ color: '#FF4D6D', weight: 6 }] }
                                                 }).addTo(map);
                                             } else {
                                                 routingControl.setWaypoints(waypoints);
@@ -1336,7 +1335,7 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
                         </body>
                         </html>
                     """.trimIndent()
-                    loadDataWithBaseURL("https://carto.com", mapHtml, "text/html", "UTF-8", null)
+                    loadDataWithBaseURL("https://openstreetmap.org", mapHtml, "text/html", "UTF-8", null)
                 }
             },
             update = { view ->
