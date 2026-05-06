@@ -330,7 +330,8 @@ def get_status():
         "lon":             row["lon"],
         "fare":            row.get("fare", 0.0),
         "ride_distance":   row.get("ride_distance", 0.0),
-        "payment_status":  row.get("payment_status", "Pending")
+        "payment_status":  row.get("payment_status", "Pending"),
+        "payment_method":  row.get("payment_method")
     })
 
 
@@ -728,26 +729,42 @@ def activate():
     return jsonify({"status": "success"})
 
 
-@app.route("/api/qr_payment_success", methods=["POST"])
-def qr_payment_success():
+@app.route("/api/payment_success", methods=["POST"])
+def payment_success():
     data = request.get_json(silent=True) or {}
     eid = data.get("emergency_id")
+    method = data.get("method", "QR") # "QR" or "App"
+    
     if not eid:
         return jsonify({"status": "error", "message": "emergency_id required"}), 400
     
     conn = get_db()
     try:
         cur = conn.cursor()
-        cur.execute("UPDATE emergencies SET payment_status='Paid' WHERE emergency_id=%s", (eid,))
+        # 1. Update payment status to Paid
+        cur.execute("UPDATE emergencies SET payment_status='Paid', payment_method=%s WHERE emergency_id=%s", (method, eid))
+        
+        # 2. Ensure mission is marked as completed
+        cur.execute("UPDATE emergencies SET emergency_state='completed' WHERE emergency_id=%s", (eid,))
+        
+        # 3. Mark the driver as Available
+        cur.execute("SELECT driver_id FROM emergencies WHERE emergency_id=%s", (eid,))
+        row = cur.fetchone()
+        if row and row[0]:
+            driver_id = row[0]
+            cur.execute("UPDATE drivers SET status='Available' WHERE id=%s", (driver_id,))
+            print(f"✅ Driver {driver_id} is now Available")
+            
         conn.commit()
         
-        # Broadcast to Driver Dashboard and Patient App
+        # 4. Broadcast to Driver Dashboard and Patient App
         socketio.emit("payment_successful", {
             "emergency_id": eid,
             "status": "Paid",
-            "message": "Payment Successful using QR Code"
+            "method": method,
+            "message": f"Payment Successful using {method}"
         })
-        print(f"💰 QR Payment Successful for ID: {eid}")
+        print(f"💰 {method} Payment Successful for ID: {eid}")
     except Exception as e:
         print(f"❌ Payment Update Error: {e}")
         return jsonify({"status": "error", "message": str(e)}), 500

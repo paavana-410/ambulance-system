@@ -33,7 +33,8 @@ data class EmergencyStatusResponse(
     val fare: Double?,
     val lat: Double?,
     val lon: Double?,
-    val payment_status: String?
+    val payment_status: String?,
+    val payment_method: String?
 )
 
 data class AmbulanceLocationResponse(
@@ -158,6 +159,9 @@ interface ApiService {
 
     @POST("/api/autopay/register_mandate")
     suspend fun registerMandate(@Body payload: MandatePayload): MandateResponse
+
+    @POST("/api/payment_success")
+    suspend fun notifyPaymentSuccess(@Body payload: Map<String, String>): SimpleResponse
 }
 
 object RetrofitClient {

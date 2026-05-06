@@ -39,7 +39,7 @@ socket.on('connect', () => {
 socket.on('payment_successful', (data) => {
     console.log('💰 Payment Success Event:', data);
     if (currentMission && data.emergency_id == currentMission.emergency_id) {
-        handleQRPaymentSuccess();
+        handlePaymentSuccess(data.method);
     }
 });
 
@@ -1118,13 +1118,24 @@ function activateEmergencyMode() {
 // QR PAYMENT HANDLING
 // -----------------------------
 
-function handleQRPaymentSuccess() {
+function handlePaymentSuccess(method) {
     const msgArea = document.getElementById('payment-status-message');
-    if(msgArea) msgArea.style.display = 'block';
+    if(msgArea) {
+        msgArea.innerHTML = `✅ Payment Successful using ${method}!`;
+        msgArea.style.display = 'block';
+    }
     
     // Show the "Mission Cleared" alert as requested in requirements
     setTimeout(() => {
-        alert("✅ Payment Successful\n\nMission Cleared! You are now Available and Ready for the next ride.");
+        alert("✅ Payment Successful - Mission Cleared!\n\nYou are now Available and Ready for the next ride.");
+        
+        // Clear mission and reset dashboard state
+        closeMissionModal();
+        
+        // Refresh local dashboard variables
+        currentMission = null;
+        currentEmergency = null;
+        if (typeof checkCurrentMission === 'function') checkCurrentMission();
     }, 500);
 }
 
@@ -1132,10 +1143,13 @@ function simulateQRPayment() {
     if (!currentMission) return;
     console.log("🛠️ Simulating QR Payment for:", currentMission.emergency_id);
     
-    fetch(`${BASE_URL}/api/qr_payment_success`, {
+    fetch(`${BASE_URL}/api/payment_success`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ emergency_id: currentMission.emergency_id })
+        body: JSON.stringify({ 
+            emergency_id: currentMission.emergency_id,
+            method: 'QR'
+        })
     })
     .then(res => res.json())
     .then(data => {

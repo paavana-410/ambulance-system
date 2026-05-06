@@ -197,6 +197,10 @@ object UserSession {
         get() = prefs.getString("paymentStatus", "") ?: ""
         set(value) = prefs.edit().putString("paymentStatus", value).apply()
 
+    var paymentMethod: String // "QR" or "App"
+        get() = prefs.getString("paymentMethod", "") ?: ""
+        set(value) = prefs.edit().putString("paymentMethod", value).apply()
+
     var rideCompletionTime: Long
         get() = prefs.getLong("rideCompletionTime", 0L)
         set(value) = prefs.edit().putLong("rideCompletionTime", value).apply()
@@ -1142,9 +1146,10 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
                 hospLat = status.dest_lat ?: 0.0
                 hospLon = status.dest_lon ?: 0.0
 
-                // REAL-TIME QR PAYMENT SYNC
+                // REAL-TIME PAYMENT SYNC
                 if (status.payment_status == "Paid") {
                     UserSession.paymentStatus = "Paid"
+                    UserSession.paymentMethod = status.payment_method ?: "QR"
                     UserSession.isPendingPayment = false
                 }
 
@@ -1421,8 +1426,18 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
                                     val chooser = Intent.createChooser(intent, "Pay via PhonePe, GPay, or Paytm")
                                     
                                     activity.startActivity(chooser)
-                                    // In a real app, we would wait for a result. For demo, we keep it pending unless they manual confirm or time out
-                                    // We will NOT mark as Paid automatically here to avoid the "Payment Successful" issue.
+                                    
+                                    // Notify backend of payment initiation (Simulated success for demo sync)
+                                    scope.launch {
+                                        try {
+                                            RetrofitClient.instance.notifyPaymentSuccess(mapOf(
+                                                "emergency_id" to emergencyId,
+                                                "method" to "App"
+                                            ))
+                                        } catch (e: Exception) {
+                                            Log.e("Payment", "Failed to notify server: ${e.message}")
+                                        }
+                                    }
                                 } catch (e: Exception) {
                                     Toast.makeText(activity, "Payment failed: ${e.message}", Toast.LENGTH_SHORT).show()
                                 }
@@ -1534,8 +1549,13 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
                             color = Color(0xFF2E7D32)
                         )
                         Spacer(modifier = Modifier.height(8.dp))
+                        val successMsg = if (UserSession.paymentMethod == "QR") {
+                            "Payment Successful using QR Code and Ride Completed"
+                        } else {
+                            "Payment Successful and Ride Completed"
+                        }
                         Text(
-                            "Payment Successful using QR Code and Ride Completed",
+                            successMsg,
                             fontSize = 16.sp,
                             color = Color.Gray,
                             textAlign = TextAlign.Center
