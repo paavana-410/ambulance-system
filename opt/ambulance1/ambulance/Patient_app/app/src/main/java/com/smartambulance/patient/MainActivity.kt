@@ -190,6 +190,18 @@ object UserSession {
     var lastFare: String
         get() = prefs.getString("lastFare", "0.0") ?: "0.0"
         set(value) = prefs.edit().putString("lastFare", value).apply()
+
+    var paymentStatus: String // "Pending", "Paid", "AutoPay Processed"
+        get() = prefs.getString("paymentStatus", "") ?: ""
+        set(value) = prefs.edit().putString("paymentStatus", value).apply()
+
+    var rideCompletionTime: Long
+        get() = prefs.getLong("rideCompletionTime", 0L)
+        set(value) = prefs.edit().putLong("rideCompletionTime", value).apply()
+
+    var rideExpiryTime: Long
+        get() = prefs.getLong("rideExpiryTime", 0L)
+        set(value) = prefs.edit().putLong("rideExpiryTime", value).apply()
 }
 
 fun t(en: String, hi: String, kn: String): String {
@@ -197,6 +209,16 @@ fun t(en: String, hi: String, kn: String): String {
         1 -> hi
         2 -> kn
         else -> en
+    }
+}
+
+fun checkAutoPay() {
+    val now = System.currentTimeMillis()
+    // 3 days = 3 * 24 * 60 * 60 * 1000 ms
+    if (UserSession.paymentStatus == "Pending" && UserSession.rideExpiryTime > 0 && now > UserSession.rideExpiryTime) {
+        UserSession.paymentStatus = "AutoPay Processed"
+        UserSession.isPendingPayment = false
+        Log.d("AutoPay", "Simulated AutoPay Processed for ride completed at ${UserSession.rideCompletionTime}")
     }
 }
 
@@ -212,6 +234,7 @@ fun AppNavigation(activity: MainActivity, linkFlow: SharedFlow<String>? = null) 
     val navController = rememberNavController()
 
     LaunchedEffect(Unit) {
+        checkAutoPay()
         linkFlow?.collect { link ->
             if (FirebaseAuth.getInstance().isSignInWithEmailLink(link)) {
                 authViewModel.verifyEmailLink(link)
@@ -899,7 +922,11 @@ fun HomeScreen(navController: NavController, activity: MainActivity) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Card(shape = RoundedCornerShape(20.dp), colors = CardDefaults.cardColors(containerColor = Color.White), elevation = CardDefaults.cardElevation(8.dp)) {
-                Text(t("Welcome, ${UserSession.username}", "स्वागत है, ${UserSession.username}", "ಸ್ವಾಗತ, ${UserSession.username}"), modifier = Modifier.padding(vertical = 8.dp, horizontal = 16.dp), fontWeight = FontWeight.ExtraBold, color = CoralRed)
+                val displayName = UserSession.username.let { 
+                    if (it.contains("@")) it.split("@").first() 
+                    else it.split(" ").firstOrNull() ?: it
+                }
+                Text(t("Welcome, $displayName", "स्वागत है, $displayName", "ಸ್ವಾಗತ, $displayName"), modifier = Modifier.padding(vertical = 8.dp, horizontal = 16.dp), fontWeight = FontWeight.ExtraBold, color = CoralRed)
             }
             Button(
                 onClick = {
@@ -934,35 +961,70 @@ fun HomeScreen(navController: NavController, activity: MainActivity) {
         Box(modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 60.dp)) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 // Persistent Pay Now if pending
-                if (UserSession.isPendingPayment) {
+                if (UserSession.isPendingPayment || UserSession.paymentStatus == "AutoPay Processed") {
                     Card(
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(bottom = 16.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF3E0)),
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (UserSession.paymentStatus == "AutoPay Processed") Color(0xFFE8F5E9) else Color(0xFFFFF3E0)
+                        ),
                         shape = RoundedCornerShape(12.dp),
                         elevation = CardDefaults.cardElevation(8.dp)
                     ) {
                         Column(modifier = Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text("💳", fontSize = 20.sp)
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text("Pending Payment Found", fontWeight = FontWeight.Bold, color = Color(0xFFE65100))
-                            }
-                            Text("Amount: ₹${UserSession.lastFare}", fontSize = 22.sp, fontWeight = FontWeight.ExtraBold, color = Color.Black)
-                            Spacer(modifier = Modifier.height(10.dp))
-                            Button(
-                                onClick = {
-                                    val upiUri = "upi://pay?pa=resqgo@upi&pn=ResQGo&am=${UserSession.lastFare}&cu=INR&tn=PendingRide&tr=TXID${System.currentTimeMillis()}"
-                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(upiUri))
-                                    try {
-                                        activity.startActivity(Intent.createChooser(intent, "Pay Now"))
-                                        UserSession.isPendingPayment = false
-                                    } catch (e: Exception) {}
-                                },
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE65100)),
-                                modifier = Modifier.fillMaxWidth().height(48.dp),
-                                shape = RoundedCornerShape(8.dp)
-                            ) {
-                                Text("PAY NOW", color = Color.White, fontWeight = FontWeight.Bold)
+                            if (UserSession.paymentStatus == "AutoPay Processed") {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text("✅", fontSize = 20.sp)
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text("AutoPay Completed", fontWeight = FontWeight.Bold, color = Color(0xFF2E7D32))
+                                }
+                                Text("Payment for your last ride (₹${UserSession.lastFare}) was automatically processed.", fontSize = 12.sp, color = Color.Gray, textAlign = TextAlign.Center)
+                                TextButton(onClick = { UserSession.paymentStatus = ""; UserSession.rideCompletionTime = 0L; UserSession.rideExpiryTime = 0L }) {
+                                    Text("Dismiss", color = Color(0xFF2E7D32))
+                                }
+                            } else {
+                                var remainingHomeText by remember { mutableStateOf("") }
+                                LaunchedEffect(UserSession.paymentStatus, UserSession.rideExpiryTime) {
+                                    while (UserSession.paymentStatus == "Pending") {
+                                        val now = System.currentTimeMillis()
+                                        val diff = UserSession.rideExpiryTime - now
+                                        if (diff > 0) {
+                                            val days = diff / (24 * 60 * 60 * 1000)
+                                            val hours = (diff / (60 * 60 * 1000)) % 24
+                                            val minutes = (diff / (60 * 1000)) % 60
+                                            val seconds = (diff / 1000) % 60
+                                            remainingHomeText = "${days}d ${hours}h ${minutes}m ${seconds}s"
+                                        } else {
+                                            checkAutoPay()
+                                            remainingHomeText = "Processing..."
+                                        }
+                                        delay(1000)
+                                    }
+                                }
+
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text("💳", fontSize = 20.sp)
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text("Pending Payment Found", fontWeight = FontWeight.Bold, color = Color(0xFFE65100))
+                                }
+                                Text("Amount: ₹${UserSession.lastFare}", fontSize = 22.sp, fontWeight = FontWeight.ExtraBold, color = Color.Black)
+                                Text("AutoPay in: $remainingHomeText", fontSize = 13.sp, color = Color.Gray)
+                                Spacer(modifier = Modifier.height(10.dp))
+                                Button(
+                                    onClick = {
+                                        val upiUri = "upi://pay?pa=resqgo@upi&pn=ResQGo&am=${UserSession.lastFare}&cu=INR&tn=PendingRide&tr=TXID${System.currentTimeMillis()}"
+                                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(upiUri))
+                                        try {
+                                            activity.startActivity(Intent.createChooser(intent, "Pay Now"))
+                                            UserSession.paymentStatus = "Paid"
+                                            UserSession.isPendingPayment = false
+                                        } catch (e: Exception) {}
+                                    },
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE65100)),
+                                    modifier = Modifier.fillMaxWidth().height(48.dp),
+                                    shape = RoundedCornerShape(8.dp)
+                                ) {
+                                    Text("PAY NOW", color = Color.White, fontWeight = FontWeight.Bold)
+                                }
                             }
                         }
                     }
@@ -1081,22 +1143,39 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
                 }
             } catch (e: Exception) {}
             if (emergencyState == "completed") {
-                UserSession.isPendingPayment = true
+                if (UserSession.paymentStatus != "Paid" && UserSession.paymentStatus != "AutoPay Processed") {
+                    if (UserSession.rideCompletionTime == 0L) {
+                        UserSession.rideCompletionTime = System.currentTimeMillis()
+                        // FOR DEMO: If you want to see it happen faster, you can reduce this time.
+                        // Here we use 3 days as requested.
+                        UserSession.rideExpiryTime = System.currentTimeMillis() + (3 * 24 * 60 * 60 * 1000L) 
+                        UserSession.paymentStatus = "Pending"
+                        UserSession.isPendingPayment = true
+                    }
+                }
                 UserSession.lastFare = String.format("%.2f", fare)
             }
             kotlinx.coroutines.delay(3000)
         }
     }
 
-    // Payment Timer
-    LaunchedEffect(emergencyState) {
-        if (emergencyState == "completed") {
-            payTimer = 30
-            while (payTimer > 0) {
-                kotlinx.coroutines.delay(1000)
-                payTimer--
+    // Simulated AutoPay Countdown
+    var remainingTimeText by remember { mutableStateOf("") }
+    LaunchedEffect(UserSession.paymentStatus, UserSession.rideExpiryTime) {
+        while (UserSession.paymentStatus == "Pending") {
+            val now = System.currentTimeMillis()
+            val diff = UserSession.rideExpiryTime - now
+            if (diff > 0) {
+                val days = diff / (24 * 60 * 60 * 1000)
+                val hours = (diff / (60 * 60 * 1000)) % 24
+                val minutes = (diff / (60 * 1000)) % 60
+                val seconds = (diff / 1000) % 60
+                remainingTimeText = "${days}d ${hours}h ${minutes}m ${seconds}s"
+            } else {
+                checkAutoPay()
+                remainingTimeText = "Processing..."
             }
-            isAutoPayPending = true
+            delay(1000)
         }
     }
 
@@ -1150,7 +1229,7 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
 
                                 function updateMap(ambLat, ambLon, patLat, patLon, hospLat, hospLon, state) {
                                     try {
-                                        if (typeof L === 'undefined') { 
+                                        if (typeof L === 'undefined' || typeof L.Routing === 'undefined') { 
                                             setTimeout(function(){ updateMap(ambLat, ambLon, patLat, patLon, hospLat, hospLon, state); }, 200); 
                                             return; 
                                         }
@@ -1187,15 +1266,15 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
                                         } 
 
                                         if (ambLat && ambLat !== 0) {
-                                            var newPos = [ambLat, ambLon];
-                                            map.panTo(newPos);
-                                            ambulanceMarker.setLatLng(newPos);
+                                            ambulanceMarker.setLatLng([ambLat, ambLon]);
                                         }
 
                                         // Update Patient
-                                        if (patLat && patLat !== 0) {
+                                        if (patLat && patLat !== 0 && state !== 'active' && state !== 'completed') {
                                             patientMarker.setLatLng([patLat, patLon]);
                                             if (!map.hasLayer(patientMarker)) patientMarker.addTo(map);
+                                        } else {
+                                            if (map.hasLayer(patientMarker)) map.removeLayer(patientMarker);
                                         }
 
                                         // Update Hospital
@@ -1214,17 +1293,19 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
                                             if (ambLat !== 0 && hospLat !== 0) {
                                                 waypoints = [L.latLng(ambLat, ambLon), L.latLng(hospLat, hospLon)];
                                             }
-                                            if (map.hasLayer(patientMarker)) map.removeLayer(patientMarker);
                                         }
 
                                         if (waypoints.length >= 2) {
                                             if (!routingControl) {
                                                 routingControl = L.Routing.control({
                                                     waypoints: waypoints,
+                                                    router: L.Routing.osrmv1({ serviceUrl: 'https://router.project-osrm.org/route/v1', profile: 'driving' }),
                                                     routeWhileDragging: false,
                                                     show: false,
                                                     addWaypoints: false,
-                                                    lineOptions: { styles: [{ color: '#d32f2f', opacity: 0.8, weight: 6 }] }
+                                                    draggableWaypoints: false,
+                                                    fitSelectedRoutes: true,
+                                                    lineOptions: { styles: [{ color: '#FF4D6D', opacity: 0.8, weight: 6 }] }
                                                 }).addTo(map);
                                             } else {
                                                 routingControl.setWaypoints(waypoints);
@@ -1234,16 +1315,15 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
                                                 map.removeControl(routingControl);
                                                 routingControl = null;
                                             }
+                                            if (ambLat !== 0) map.panTo([ambLat, ambLon]);
                                         }
                                         
-                                        // Auto-fit bounds
-                                        var group = [];
-                                        if (ambulanceMarker && map.hasLayer(ambulanceMarker)) group.push(ambulanceMarker.getLatLng());
-                                        if (patientMarker && map.hasLayer(patientMarker)) group.push(patientMarker.getLatLng());
-                                        if (hospitalMarker && map.hasLayer(hospitalMarker)) group.push(hospitalMarker.getLatLng());
-                                        
-                                        if (group.length >= 2) {
-                                            map.fitBounds(L.latLngBounds(group), {padding: [50, 50]});
+                                        // Auto-fit bounds if no routing control is fitting routes
+                                        if (!routingControl) {
+                                            var group = [];
+                                            if (ambulanceMarker && map.hasLayer(ambulanceMarker)) group.push(ambulanceMarker.getLatLng());
+                                            if (hospitalMarker && map.hasLayer(hospitalMarker)) group.push(hospitalMarker.getLatLng());
+                                            if (group.length >= 2) map.fitBounds(L.latLngBounds(group), {padding: [50, 50]});
                                         }
 
                                     } catch(e) {
@@ -1280,22 +1360,33 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
 
                     Spacer(modifier = Modifier.height(20.dp))
 
-                    if (isAutoPayPending) {
+                    if (UserSession.paymentStatus == "AutoPay Processed") {
+                        Card(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color(0xFFE8F5E9)),
+                            shape = RoundedCornerShape(10.dp)
+                        ) {
+                            Column(modifier = Modifier.padding(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text("✅ AutoPay Completed", fontWeight = FontWeight.Bold, color = Color(0xFF2E7D32))
+                                Text("Payment was automatically processed after pending period.", fontSize = 12.sp, color = Color.Gray, textAlign = TextAlign.Center)
+                            }
+                        }
+                    } else if (UserSession.paymentStatus == "Pending") {
                         Card(
                             modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
                             colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF3E0)),
                             shape = RoundedCornerShape(10.dp)
                         ) {
-                            Text(
-                                text = "⚠️ Payment Pending\nSince you did not pay now, you can pay anytime within 3 days or it will autopay on the third day.",
-                                fontSize = 13.sp,
-                                color = Color(0xFFE65100),
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier.padding(12.dp),
-                                fontWeight = FontWeight.Bold
-                            )
+                            Column(modifier = Modifier.padding(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text("⚠️ Payment Pending", fontWeight = FontWeight.Bold, color = Color(0xFFE65100))
+                                Text("AutoPay in: $remainingTimeText", fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, color = Color.Black)
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text("You can pay now or it will be automatically processed after 3 days.", fontSize = 11.sp, color = Color.Gray, textAlign = TextAlign.Center)
+                            }
                         }
-                    } else {
+                        
+                        Spacer(modifier = Modifier.height(12.dp))
+
                         // Dynamic UPI Pay Now button
                         Button(
                             onClick = {
@@ -1311,10 +1402,12 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
                                     val intent = Intent(Intent.ACTION_VIEW, Uri.parse(upiUri))
                                     val chooser = Intent.createChooser(intent, "Pay via PhonePe, GPay, or Paytm")
                                     
-                                    // Check if there's an app to handle this intent
                                     val packageManager = activity.packageManager
                                     if (intent.resolveActivity(packageManager) != null) {
                                         activity.startActivity(chooser)
+                                        // Mark as Paid if successful (In real app, we'd wait for callback)
+                                        UserSession.paymentStatus = "Paid"
+                                        UserSession.isPendingPayment = false
                                     } else {
                                         Toast.makeText(activity, "No UPI app found. Please install PhonePe or GPay.", Toast.LENGTH_LONG).show()
                                     }
@@ -1333,8 +1426,8 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
                                 Text("PAY NOW", color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 17.sp)
                             }
                         }
-                        
-                        Text("AutoPay in ${payTimer}s", fontSize = 12.sp, color = Color.Gray, modifier = Modifier.padding(top = 4.dp))
+                    } else if (UserSession.paymentStatus == "Paid") {
+                        Text("✅ Payment Successful", fontWeight = FontWeight.Bold, color = Color(0xFF2E7D32))
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
