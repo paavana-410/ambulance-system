@@ -963,7 +963,7 @@ fun HomeScreen(navController: NavController, activity: MainActivity) {
         Box(modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 60.dp)) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 // Persistent Pay Now if pending
-                if (UserSession.isPendingPayment || UserSession.paymentStatus == "Pending" || UserSession.paymentStatus == "AutoPay Processed") {
+                if (UserSession.isPendingPayment || UserSession.paymentStatus == "AutoPay Processed") {
                     Card(
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(bottom = 16.dp),
                         colors = CardDefaults.cardColors(
@@ -1112,8 +1112,17 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
     var hospLon by remember { mutableStateOf(0.0) }
     
     var lastStatus by remember { mutableStateOf("") }
-    var payTimer by remember { mutableStateOf(30) }
     var isAutoPayPending by remember { mutableStateOf(false) }
+    
+    // Payment Pending Timer Logic
+    LaunchedEffect(emergencyState) {
+        if (emergencyState == "completed" && UserSession.paymentStatus == "Pending") {
+            while (payTimer > 0) {
+                kotlinx.coroutines.delay(1000)
+                payTimer--
+            }
+        }
+    }
     
     LaunchedEffect(Unit) {
         while (true) {
@@ -1217,7 +1226,6 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
                             <style>
                                 body, html, #map { height: 100vh; width: 100vw; margin: 0; padding: 0; overflow: hidden; background: #e0e0e0; }
                                 #loading { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-family: sans-serif; color: #666; z-index: 1000; }
-                                .leaflet-routing-container { display: none !important; }
                             </style>
                         </head>
                         <body>
@@ -1243,7 +1251,7 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
 
                                         if (!map) {
                                             map = L.map('map', {zoomControl: false, attributionControl: false}).setView([centerLat, centerLon], 15);
-                                            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+                                            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { maxZoom: 19 }).addTo(map);
                                             
                                             ambulanceMarker = L.marker([centerLat, centerLon], {
                                                 icon: L.icon({
@@ -1302,11 +1310,13 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
                                             if (!routingControl) {
                                                 routingControl = L.Routing.control({
                                                     waypoints: waypoints,
+                                                    router: L.Routing.osrmv1({ serviceUrl: 'https://router.project-osrm.org/route/v1', profile: 'driving' }),
+                                                    routeWhileDragging: false,
                                                     show: false,
                                                     addWaypoints: false,
                                                     draggableWaypoints: false,
                                                     fitSelectedRoutes: true,
-                                                    lineOptions: { styles: [{ color: '#FF4D6D', weight: 6 }] }
+                                                    lineOptions: { styles: [{ color: '#FF4D6D', opacity: 0.8, weight: 6 }] }
                                                 }).addTo(map);
                                             } else {
                                                 routingControl.setWaypoints(waypoints);
@@ -1335,7 +1345,7 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
                         </body>
                         </html>
                     """.trimIndent()
-                    loadDataWithBaseURL("https://openstreetmap.org", mapHtml, "text/html", "UTF-8", null)
+                    loadDataWithBaseURL("https://carto.com", mapHtml, "text/html", "UTF-8", null)
                 }
             },
             update = { view ->
@@ -1373,45 +1383,38 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
                             }
                         }
                     } else if (UserSession.paymentStatus == "Pending") {
-                        Card(
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                            colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF3E0)),
-                            shape = RoundedCornerShape(10.dp)
-                        ) {
-                            Column(modifier = Modifier.padding(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text("⚠️ Payment Pending", fontWeight = FontWeight.Bold, color = Color(0xFFE65100))
-                                Text("AutoPay in: $remainingTimeText", fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, color = Color.Black)
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text("You can pay now or it will be automatically processed after 3 days.", fontSize = 11.sp, color = Color.Gray, textAlign = TextAlign.Center)
+                        if (payTimer > 0) {
+                            Text("Waiting for payment... $payTimer s", color = CoralRed, fontWeight = FontWeight.Bold)
+                        } else {
+                            Card(
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                                colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF3E0)),
+                                shape = RoundedCornerShape(10.dp)
+                            ) {
+                                Column(modifier = Modifier.padding(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text("⚠️ Payment Pending", fontWeight = FontWeight.Bold, color = Color(0xFFE65100))
+                                    Text("AutoPay in: $remainingTimeText", fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, color = Color.Black)
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text("Since you did not pay now, you can pay anytime within 3 days or it will autopay on the third day.", fontSize = 11.sp, color = Color.Gray, textAlign = TextAlign.Center)
+                                }
                             }
                         }
                         
                         Spacer(modifier = Modifier.height(12.dp))
 
-                        // Dynamic UPI Pay Now button
+                        // Dynamic UPI Pay Now button (ALWAYS VISIBLE if Pending)
                         Button(
                             onClick = {
                                 try {
-                                    val currentDriverUpi = driverUpi ?: ""
-                                    if (currentDriverUpi.isBlank() || !currentDriverUpi.contains("@")) {
-                                        Toast.makeText(activity, "Payment not available. Driver UPI not configured.", Toast.LENGTH_LONG).show()
-                                        return@Button
-                                    }
-                                    
+                                    val currentDriverUpi = driverUpi ?: "resqgo@upi"
                                     val formattedFare = String.format("%.2f", fare)
                                     val upiUri = "upi://pay?pa=$currentDriverUpi&pn=$driverName&am=$formattedFare&cu=INR&tn=Ambulance Fare - ResQGo"
                                     val intent = Intent(Intent.ACTION_VIEW, Uri.parse(upiUri))
                                     val chooser = Intent.createChooser(intent, "Pay via PhonePe, GPay, or Paytm")
                                     
-                                    val packageManager = activity.packageManager
-                                    if (intent.resolveActivity(packageManager) != null) {
-                                        activity.startActivity(chooser)
-                                        // Mark as Paid if successful (In real app, we'd wait for callback)
-                                        UserSession.paymentStatus = "Paid"
-                                        UserSession.isPendingPayment = false
-                                    } else {
-                                        Toast.makeText(activity, "No UPI app found. Please install PhonePe or GPay.", Toast.LENGTH_LONG).show()
-                                    }
+                                    activity.startActivity(chooser)
+                                    // In a real app, we would wait for a result. For demo, we keep it pending unless they manual confirm or time out
+                                    // We will NOT mark as Paid automatically here to avoid the "Payment Successful" issue.
                                 } catch (e: Exception) {
                                     Toast.makeText(activity, "Payment failed: ${e.message}", Toast.LENGTH_SHORT).show()
                                 }
@@ -1424,7 +1427,7 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text("📱", fontSize = 22.sp)
                                 Spacer(modifier = Modifier.width(10.dp))
-                                Text("PAY NOW", color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 17.sp)
+                                Text("PAY NOW VIA PHONEPE", color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 17.sp)
                             }
                         }
                     } else if (UserSession.paymentStatus == "Paid") {
