@@ -326,6 +326,8 @@ def get_status():
         "ambulance_no":    row["ambulance_no"],
         "driver_phone":    row.get("driver_phone"),
         "dest_name":       row["dest_name"],
+        "dest_lat":        row["dest_lat"],
+        "dest_lon":        row["dest_lon"],
         "lat":             row["lat"],
         "lon":             row["lon"],
         "fare":            row.get("fare", 0.0),

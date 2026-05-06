@@ -551,7 +551,7 @@ function startAmbulanceMovement(targetType){
         }
 
         // TRAFFIC SIGNAL SIMULATION LOGIC
-        if (targetType === 'hospital' && patientMarker && hospitalMarker) {
+        if (targetType === 'hospital' && hospitalMarker) {
             simulateTrafficSignals(point.lat, point.lng);
         }
 
@@ -564,17 +564,22 @@ function startAmbulanceMovement(targetType){
 }
 
 function simulateTrafficSignals(ambLat, ambLon) {
-    if (!currentMission || !patientMarker || !hospitalMarker) return;
+    if (!currentMission || !hospitalMarker) return;
 
-    const patLoc = patientMarker.getLatLng();
+    // Use currentMission coordinates for patient location (more robust than patientMarker)
+    const patLat = currentMission.lat || (currentMission.patient_location ? currentMission.patient_location.lat : 0);
+    const patLon = currentMission.lon || (currentMission.patient_location ? currentMission.patient_location.lon : 0);
+    
+    if (patLat === 0) return;
+    
     const hospLoc = hospitalMarker.getLatLng();
 
     if (!signal1 || !signal2) {
         // Calculate dynamic positions on the route
-        const s1Lat = patLoc.lat + (hospLoc.lat - patLoc.lat) * 0.35;
-        const s1Lon = patLoc.lng + (hospLoc.lng - patLoc.lng) * 0.35;
-        const s2Lat = patLoc.lat + (hospLoc.lat - patLoc.lat) * 0.75;
-        const s2Lon = patLoc.lng + (hospLoc.lng - patLoc.lng) * 0.75;
+        const s1Lat = patLat + (hospLoc.lat - patLat) * 0.35;
+        const s1Lon = patLon + (hospLoc.lng - patLon) * 0.35;
+        const s2Lat = patLat + (hospLoc.lat - patLat) * 0.75;
+        const s2Lon = patLon + (hospLoc.lng - patLon) * 0.75;
 
         signal1 = L.marker([s1Lat, s1Lon], {
             icon: L.divIcon({
