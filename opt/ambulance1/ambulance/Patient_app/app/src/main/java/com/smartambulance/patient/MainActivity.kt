@@ -1320,7 +1320,7 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
                                             ambulanceMarker.setLatLng([ambLat, ambLon]);
                                         }
 
-                                        // Update Signals Simulation
+                                                // Update Signals Simulation
                                         if (state === 'active' && patLat !== 0 && hospLat !== 0) {
                                             if (!signal1 || !signal2) {
                                                 var s1Lat = patLat + (hospLat - patLat) * 0.35;
@@ -1330,16 +1330,16 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
 
                                                 signal1 = L.marker([s1Lat, s1Lon], {
                                                     icon: L.divIcon({
-                                                        html: '<div style="background:green; width:18px; height:18px; border-radius:50%; border:2px solid black; margin:auto;"></div><div class="signal-label">Signal 1: Priority Active</div>',
-                                                        className: '', iconSize: [100, 40]
-                                                    })
+                                                        html: `<div style="background:#2ecc71; width:22px; height:22px; border-radius:50%; border:3px solid #333; box-shadow:0 0 8px rgba(46,204,113,0.8); margin:auto;"></div><div class="signal-label" style="border-color:#2ecc71;">Signal 1: Priority Active</div>`,
+                                                        className: '', iconSize: [110, 50]
+                                                    }), zIndexOffset: 2000
                                                 }).addTo(map);
 
                                                 signal2 = L.marker([s2Lat, s2Lon], {
                                                     icon: L.divIcon({
-                                                        html: '<div id="s2-light" style="background:red; width:18px; height:18px; border-radius:50%; border:2px solid black; margin:auto;"></div><div id="s2-status" class="signal-label">Signal 2: RED</div>',
-                                                        className: '', iconSize: [100, 40]
-                                                    })
+                                                        html: `<div id="s2-light" style="background:#e74c3c; width:22px; height:22px; border-radius:50%; border:3px solid #333; box-shadow:0 0 8px rgba(231,76,60,0.8); margin:auto;"></div><div id="s2-status" class="signal-label" style="border-color:#e74c3c;">Signal 2: RED</div>`,
+                                                        className: '', iconSize: [110, 50]
+                                                    }), zIndexOffset: 2000
                                                 }).addTo(map);
                                             }
 
@@ -1351,15 +1351,27 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
 
                                             if (dist < 500 && signal2State === 'RED') {
                                                 signal2State = 'YELLOW';
-                                                if(s2Light) s2Light.style.background = 'yellow';
-                                                if(s2Status) s2Status.innerText = 'Signal 2: Transitioning...';
+                                                if(s2Light) {
+                                                    s2Light.style.background = '#f1c40f';
+                                                    s2Light.style.boxShadow = '0 0 12px rgba(241,196,15,0.9)';
+                                                }
+                                                if(s2Status) {
+                                                    s2Status.innerText = 'Signal 2: Transitioning...';
+                                                    s2Status.style.borderColor = '#f1c40f';
+                                                }
                                                 
                                                 setTimeout(function() {
                                                     signal2State = 'GREEN';
-                                                    if(s2Light) s2Light.style.background = 'green';
-                                                    if(s2Status) s2Status.innerText = 'Signal 2: CLEARED';
+                                                    if(s2Light) {
+                                                        s2Light.style.background = '#2ecc71';
+                                                        s2Light.style.boxShadow = '0 0 12px rgba(46,204,113,0.9)';
+                                                    }
+                                                    if(s2Status) {
+                                                        s2Status.innerText = 'Signal 2: CLEARED';
+                                                        s2Status.style.borderColor = '#2ecc71';
+                                                    }
                                                     if(banner) banner.style.display = 'block';
-                                                }, 2000);
+                                                }, 2500);
                                             }
                                         } else {
                                             if (signal1) { map.removeLayer(signal1); signal1 = null; }
