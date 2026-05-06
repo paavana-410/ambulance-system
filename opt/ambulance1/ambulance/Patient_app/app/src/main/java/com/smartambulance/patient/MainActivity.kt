@@ -1113,6 +1113,7 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
     
     var lastStatus by remember { mutableStateOf("") }
     var isAutoPayPending by remember { mutableStateOf(false) }
+    var payTimer by remember { mutableStateOf(30) }
     
     // Payment Pending Timer Logic
     LaunchedEffect(emergencyState) {
