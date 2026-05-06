@@ -1320,45 +1320,56 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
                                             ambulanceMarker.setLatLng([ambLat, ambLon]);
                                         }
 
-                                                // Update Signals Simulation
-                                        if (state === 'active' && patLat !== 0 && hospLat !== 0) {
+                                        // Update Signals Simulation
+                                        if (state === 'active' && routeCoordinates.length > 0) {
                                             if (!signal1 || !signal2) {
-                                                var s1Lat = patLat + (hospLat - patLat) * 0.35;
-                                                var s1Lon = patLon + (hospLon - patLon) * 0.35;
-                                                var s2Lat = patLat + (hospLat - patLat) * 0.75;
-                                                var s2Lon = patLon + (hospLon - patLon) * 0.75;
+                                                console.log("🚦 Placing Signals on Route Path (Patient side)");
+                                                var idx1 = Math.floor(routeCoordinates.length * 0.3);
+                                                var idx2 = Math.floor(routeCoordinates.length * 0.7);
+                                                var pos1 = routeCoordinates[idx1];
+                                                var pos2 = routeCoordinates[idx2];
 
-                                                signal1 = L.marker([s1Lat, s1Lon], {
+                                                signal1 = L.marker([pos1.lat, pos1.lng], {
                                                     icon: L.divIcon({
                                                         html: `<div style="background:#2ecc71; width:22px; height:22px; border-radius:50%; border:3px solid #333; box-shadow:0 0 8px rgba(46,204,113,0.8); margin:auto;"></div><div class="signal-label" style="border-color:#2ecc71;">Signal 1: Priority Active</div>`,
-                                                        className: '', iconSize: [110, 50]
+                                                        className: '', iconSize: [110, 50], iconAnchor: [55, 25]
                                                     }), zIndexOffset: 2000
                                                 }).addTo(map);
 
-                                                signal2 = L.marker([s2Lat, s2Lon], {
+                                                signal2 = L.marker([pos2.lat, pos2.lng], {
                                                     icon: L.divIcon({
                                                         html: `<div id="s2-light" style="background:#e74c3c; width:22px; height:22px; border-radius:50%; border:3px solid #333; box-shadow:0 0 8px rgba(231,76,60,0.8); margin:auto;"></div><div id="s2-status" class="signal-label" style="border-color:#e74c3c;">Signal 2: RED</div>`,
-                                                        className: '', iconSize: [110, 50]
+                                                        className: '', iconSize: [110, 50], iconAnchor: [55, 25]
                                                     }), zIndexOffset: 2000
                                                 }).addTo(map);
                                             }
 
-                                            // Signal 2 Detection Logic
-                                            var dist = haversine(ambLat, ambLon, signal2.getLatLng().lat, signal2.getLatLng().lng);
+                                            var banner = document.getElementById('corridor-banner');
+                                            
+                                            // Signal 1 Detection
+                                            var d1 = haversine(ambLat, ambLon, signal1.getLatLng().lat, signal1.getLatLng().lng);
+                                            if (d1 < 300 && d1 > 30) {
+                                                if(banner) {
+                                                    banner.style.display = 'block';
+                                                    banner.innerText = "🚑 Signal 1: Priority Active";
+                                                }
+                                            } else if (d1 <= 30) {
+                                                if(banner && banner.innerText.includes("Signal 1")) banner.style.display = 'none';
+                                            }
+
+                                            // Signal 2 Detection
+                                            var d2 = haversine(ambLat, ambLon, signal2.getLatLng().lat, signal2.getLatLng().lng);
                                             var s2Light = document.getElementById('s2-light');
                                             var s2Status = document.getElementById('s2-status');
-                                            var banner = document.getElementById('corridor-banner');
 
-                                            if (dist < 500 && signal2State === 'RED') {
+                                            if (d2 < 500 && signal2State === 'RED') {
                                                 signal2State = 'YELLOW';
-                                                if(s2Light) {
-                                                    s2Light.style.background = '#f1c40f';
-                                                    s2Light.style.boxShadow = '0 0 12px rgba(241,196,15,0.9)';
+                                                if(banner) {
+                                                    banner.style.display = 'block';
+                                                    banner.innerText = "🚑 Signal 2: Approaching Zone";
                                                 }
-                                                if(s2Status) {
-                                                    s2Status.innerText = 'Signal 2: Transitioning...';
-                                                    s2Status.style.borderColor = '#f1c40f';
-                                                }
+                                                if(s2Light) s2Light.style.background = '#f1c40f';
+                                                if(s2Status) s2Status.innerText = 'Signal 2: Transitioning...';
                                                 
                                                 setTimeout(function() {
                                                     signal2State = 'GREEN';
@@ -1370,8 +1381,12 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
                                                         s2Status.innerText = 'Signal 2: CLEARED';
                                                         s2Status.style.borderColor = '#2ecc71';
                                                     }
-                                                    if(banner) banner.style.display = 'block';
+                                                    if(banner) banner.innerText = "🚑 Signal 2: Priority Active";
                                                 }, 2500);
+                                            }
+                                            
+                                            if (d2 < 40 && signal2State === 'GREEN') {
+                                                if(banner && banner.innerText.includes("Signal 2")) banner.style.display = 'none';
                                             }
                                         } else {
                                             if (signal1) { map.removeLayer(signal1); signal1 = null; }
@@ -1419,6 +1434,10 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
                                                     fitSelectedRoutes: true,
                                                     lineOptions: { styles: [{ color: '#FF4D6D', opacity: 0.8, weight: 6 }] }
                                                 }).addTo(map);
+                                                
+                                                routingControl.on('routesfound', function(e) {
+                                                    routeCoordinates = e.routes[0].coordinates;
+                                                });
                                             } else {
                                                 routingControl.setWaypoints(waypoints);
                                             }
@@ -1426,11 +1445,12 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
                                             if (routingControl) {
                                                 map.removeControl(routingControl);
                                                 routingControl = null;
+                                                routeCoordinates = [];
                                             }
                                             if (ambLat !== 0) map.panTo([ambLat, ambLon]);
                                         }
                                         
-                                        // Auto-fit bounds if no routing control is fitting routes
+                                        // Auto-fit bounds
                                         if (!routingControl) {
                                             var group = [];
                                             if (ambulanceMarker && map.hasLayer(ambulanceMarker)) group.push(ambulanceMarker.getLatLng());
