@@ -1098,6 +1098,7 @@ fun HomeScreen(navController: NavController, activity: MainActivity) {
 
 @Composable
 fun LiveStatusScreen(navController: NavController, activity: MainActivity, emergencyId: String) {
+    val scope = rememberCoroutineScope()
     var emergencyState by remember { mutableStateOf("pending") }
     var driverName by remember { mutableStateOf("-") }
     var ambulanceNo by remember { mutableStateOf("-") }
