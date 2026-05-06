@@ -25,6 +25,12 @@ let routeCoordinates = [];
 let movementIndex = 0;
 let movementInterval = null;
 
+// Traffic Signal Priority Simulation
+let signal1 = null;
+let signal2 = null;
+let signal2State = 'RED';
+let corridorBannerShown = false;
+
 // Fixed test location (Bangalore)
 // Fixed test location (Bangalore)
 let currentLocation = { lat: 13.026632, lon: 77.571419 };
@@ -544,12 +550,81 @@ function startAmbulanceMovement(targetType){
             map.panTo([point.lat, point.lng]); // Follow the car
         }
 
+        // TRAFFIC SIGNAL SIMULATION LOGIC
+        if (targetType === 'hospital' && patientMarker && hospitalMarker) {
+            simulateTrafficSignals(point.lat, point.lng);
+        }
+
         sendLocationToServer(currentLocation);
 
         // REALISTIC SPEED: Only 1 step every 2 seconds means a realistic 2-3 min journey
         movementIndex += 1; 
 
     }, 2000); 
+}
+
+function simulateTrafficSignals(ambLat, ambLon) {
+    if (!currentMission || !patientMarker || !hospitalMarker) return;
+
+    const patLoc = patientMarker.getLatLng();
+    const hospLoc = hospitalMarker.getLatLng();
+
+    if (!signal1 || !signal2) {
+        // Calculate dynamic positions on the route
+        const s1Lat = patLoc.lat + (hospLoc.lat - patLoc.lat) * 0.35;
+        const s1Lon = patLoc.lng + (hospLoc.lng - patLoc.lng) * 0.35;
+        const s2Lat = patLoc.lat + (hospLoc.lat - patLoc.lat) * 0.75;
+        const s2Lon = patLoc.lng + (hospLoc.lng - patLoc.lng) * 0.75;
+
+        signal1 = L.marker([s1Lat, s1Lon], {
+            icon: L.divIcon({
+                html: '<div style="background:green; width:18px; height:18px; border-radius:50%; border:2px solid black; margin:auto;"></div><div class="signal-label">Signal 1: Priority Active</div>',
+                className: '', iconSize: [100, 40]
+            })
+        }).addTo(map);
+
+        signal2 = L.marker([s2Lat, s2Lon], {
+            icon: L.divIcon({
+                html: '<div id="s2-light" style="background:red; width:18px; height:18px; border-radius:50%; border:2px solid black; margin:auto;"></div><div id="s2-status" class="signal-label">Signal 2: RED</div>',
+                className: '', iconSize: [100, 40]
+            })
+        }).addTo(map);
+    }
+
+    // Logic for Signal 2
+    const dist = calculateDistance(ambLat, ambLon, signal2.getLatLng().lat, signal2.getLatLng().lng);
+    const s2Light = document.getElementById('s2-light');
+    const s2Status = document.getElementById('s2-status');
+    const banner = document.getElementById('corridor-banner');
+
+    if (dist < 500 && signal2State === 'RED') {
+        signal2State = 'YELLOW';
+        if(s2Light) s2Light.style.background = 'yellow';
+        if(s2Status) s2Status.innerText = 'Signal 2: Transitioning...';
+        
+        setTimeout(() => {
+            signal2State = 'GREEN';
+            if(s2Light) s2Light.style.background = 'green';
+            if(s2Status) s2Status.innerText = 'Signal 2: CLEARED';
+            if(banner) banner.style.display = 'block';
+            
+            // Revert back to normal after ambulance passes (simulated by timeout)
+            setTimeout(() => {
+                if(s2Light) s2Light.style.background = 'red';
+                if(s2Status) s2Status.innerText = 'Signal 2: RED';
+                signal2State = 'RED';
+                if(banner) banner.style.display = 'none';
+            }, 8000);
+        }, 2000);
+    }
+}
+
+function clearSignals() {
+    if (signal1) { map.removeLayer(signal1); signal1 = null; }
+    if (signal2) { map.removeLayer(signal2); signal2 = null; }
+    const banner = document.getElementById('corridor-banner');
+    if(banner) banner.style.display = 'none';
+    signal2State = 'RED';
 }
 
 
@@ -598,6 +673,7 @@ function patientPickedUp() {
             document.getElementById('hospital-search-section').style.display = 'block';
 
             clearRoute();
+            clearSignals();
             searchHospitals();
         } else {
             alert("Server error confirming pickup");

@@ -1241,10 +1241,20 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
                             <style>
                                 body, html, #map { height: 100vh; width: 100vw; margin: 0; padding: 0; overflow: hidden; background: #e0e0e0; }
                                 #loading { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-family: sans-serif; color: #666; z-index: 1000; }
+                                .corridor-banner {
+                                    position: absolute; top: 80px; left: 50%; transform: translateX(-50%);
+                                    background: rgba(211, 47, 47, 0.9); color: white; padding: 10px 20px;
+                                    border-radius: 30px; font-family: sans-serif; font-weight: bold;
+                                    z-index: 2000; display: none; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+                                    animation: slideDown 0.5s ease-out;
+                                }
+                                @keyframes slideDown { from { top: -50px; } to { top: 80px; } }
+                                .signal-label { font-size: 10px; font-weight: bold; background: white; padding: 2px; border: 1px solid #ccc; white-space: nowrap; }
                             </style>
                         </head>
                         <body>
                             <div id="loading">Initializing Map...</div>
+                            <div id="corridor-banner" class="corridor-banner">🚑 Emergency Corridor Activated</div>
                             <div id="map"></div>
                             <script>
                                 var map = null;
@@ -1252,6 +1262,21 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
                                 var patientMarker = null;
                                 var hospitalMarker = null;
                                 var routingControl = null;
+                                
+                                var signal1 = null;
+                                var signal2 = null;
+                                var signal2State = 'RED'; // RED, YELLOW, GREEN, NORMAL
+                                var bannerShown = false;
+
+                                function haversine(lat1, lon1, lat2, lon2) {
+                                    var R = 6371e3;
+                                    var phi1 = lat1 * Math.PI/180;
+                                    var phi2 = lat2 * Math.PI/180;
+                                    var dPhi = (lat2-lat1) * Math.PI/180;
+                                    var dLambda = (lon2-lon1) * Math.PI/180;
+                                    var a = Math.sin(dPhi/2) * Math.sin(dPhi/2) + Math.cos(phi1) * Math.cos(phi2) * Math.sin(dLambda/2) * Math.sin(dLambda/2);
+                                    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+                                }
 
                                 function updateMap(ambLat, ambLon, patLat, patLon, hospLat, hospLon, state) {
                                     try {
@@ -1293,6 +1318,55 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
 
                                         if (ambLat && ambLat !== 0) {
                                             ambulanceMarker.setLatLng([ambLat, ambLon]);
+                                        }
+
+                                        // Update Signals Simulation
+                                        if (state === 'active' && patLat !== 0 && hospLat !== 0) {
+                                            if (!signal1 || !signal2) {
+                                                var s1Lat = patLat + (hospLat - patLat) * 0.35;
+                                                var s1Lon = patLon + (hospLon - patLon) * 0.35;
+                                                var s2Lat = patLat + (hospLat - patLat) * 0.75;
+                                                var s2Lon = patLon + (hospLon - patLon) * 0.75;
+
+                                                signal1 = L.marker([s1Lat, s1Lon], {
+                                                    icon: L.divIcon({
+                                                        html: '<div style="background:green; width:18px; height:18px; border-radius:50%; border:2px solid black; margin:auto;"></div><div class="signal-label">Signal 1: Priority Active</div>',
+                                                        className: '', iconSize: [100, 40]
+                                                    })
+                                                }).addTo(map);
+
+                                                signal2 = L.marker([s2Lat, s2Lon], {
+                                                    icon: L.divIcon({
+                                                        html: '<div id="s2-light" style="background:red; width:18px; height:18px; border-radius:50%; border:2px solid black; margin:auto;"></div><div id="s2-status" class="signal-label">Signal 2: RED</div>',
+                                                        className: '', iconSize: [100, 40]
+                                                    })
+                                                }).addTo(map);
+                                            }
+
+                                            // Signal 2 Detection Logic
+                                            var dist = haversine(ambLat, ambLon, signal2.getLatLng().lat, signal2.getLatLng().lng);
+                                            var s2Light = document.getElementById('s2-light');
+                                            var s2Status = document.getElementById('s2-status');
+                                            var banner = document.getElementById('corridor-banner');
+
+                                            if (dist < 500 && signal2State === 'RED') {
+                                                signal2State = 'YELLOW';
+                                                if(s2Light) s2Light.style.background = 'yellow';
+                                                if(s2Status) s2Status.innerText = 'Signal 2: Transitioning...';
+                                                
+                                                setTimeout(function() {
+                                                    signal2State = 'GREEN';
+                                                    if(s2Light) s2Light.style.background = 'green';
+                                                    if(s2Status) s2Status.innerText = 'Signal 2: CLEARED';
+                                                    if(banner) banner.style.display = 'block';
+                                                }, 2000);
+                                            }
+                                        } else {
+                                            if (signal1) { map.removeLayer(signal1); signal1 = null; }
+                                            if (signal2) { map.removeLayer(signal2); signal2 = null; }
+                                            var banner = document.getElementById('corridor-banner');
+                                            if(banner) banner.style.display = 'none';
+                                            signal2State = 'RED';
                                         }
 
                                         // Update Patient
