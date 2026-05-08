@@ -481,7 +481,7 @@ function calculateRouteToPatient(patientLocation) {
         draggableWaypoints: false,
         itinerary: { containerClassName: 'hidden' }, // Hide the panel
         lineOptions: {
-            styles: [{ color: '#e74c3c', opacity: 0.8, weight: 6 }]
+            styles: [{ color: '#ff0000', opacity: 0.9, weight: 10 }]
         },
         createMarker: function(i, waypoint, n) {
             return null;
@@ -504,8 +504,14 @@ function calculateRouteToPatient(patientLocation) {
         const time = Math.round(route.summary.totalTime / 60);
 
         console.log(`📍 Route calculated: ${distance} km, ${time} minutes`);
-        document.getElementById('mission-distance').textContent =
-            `${Math.round(route.summary.totalDistance)}m - ${time} min`;
+        
+        // Improve display for very short distances
+        const distMeters = Math.round(route.summary.totalDistance);
+        if (distMeters < 10) {
+            document.getElementById('mission-distance').textContent = "Very close - Arriving now!";
+        } else {
+            document.getElementById('mission-distance').textContent = `${distMeters}m - ${time} min`;
+        }
 
         routeCoordinates = route.coordinates;
         movementIndex = 0;
@@ -573,8 +579,8 @@ function startAmbulanceMovement(targetType){
 
         sendLocationToServer(currentLocation);
 
-        // TRAFFIC SIGNAL SIMULATION LOGIC - Enabled for BOTH patient and hospital
-        if (targetType === 'patient' || (targetType === 'hospital' && hospitalMarker)) {
+        // TRAFFIC SIGNAL SIMULATION LOGIC - Reverted to Hospital Only per user request
+        if (targetType === 'hospital' && hospitalMarker) {
             simulateTrafficSignals(point.lat, point.lng);
         }
 
@@ -895,7 +901,7 @@ function calculateRouteToHospital(hospitalLocation) {
         draggableWaypoints: false,
         itinerary: { containerClassName: 'hidden' }, // Hide the panel
         lineOptions: {
-            styles: [{ color: '#2196F3', opacity: 0.8, weight: 6 }]
+            styles: [{ color: '#2196F3', opacity: 0.9, weight: 10 }]
         },
         createMarker: function(i, waypoint, n) {
             return null;
@@ -963,7 +969,7 @@ function arrivedAtHospital() {
 }
 
 function simulateTrafficSignals(ambLat, ambLon) {
-    if (!currentMission || !routeCoordinates || routeCoordinates.length === 0) return;
+    if (!currentMission || !hospitalMarker || !routeCoordinates || routeCoordinates.length === 0) return;
 
     if (!signal1 || !signal2) {
         console.log("🚦 Initializing Traffic Signals on actual road route...");
