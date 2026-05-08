@@ -1321,13 +1321,14 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
                                         }
 
                                         // Update Signals Simulation
-                                        if (state === 'active' && routeCoordinates.length > 0) {
+                                        if (state === 'active' && typeof routeCoordinates !== 'undefined' && routeCoordinates.length > 0) {
                                             if (!signal1 || !signal2) {
-                                                console.log("🚦 Placing Signals on Route Path (Patient side)");
-                                                var idx1 = Math.floor(routeCoordinates.length * 0.3);
-                                                var idx2 = Math.floor(routeCoordinates.length * 0.7);
-                                                var pos1 = routeCoordinates[idx1];
-                                                var pos2 = routeCoordinates[idx2];
+                                                console.log("🚦 Initializing Signals on Route Path (Patient side)");
+                                                window.signal1Index = Math.floor(routeCoordinates.length * 0.3);
+                                                window.signal2Index = Math.floor(routeCoordinates.length * 0.7);
+                                                
+                                                var pos1 = routeCoordinates[window.signal1Index];
+                                                var pos2 = routeCoordinates[window.signal2Index];
 
                                                 signal1 = L.marker([pos1.lat, pos1.lng], {
                                                     icon: L.divIcon({
@@ -1345,48 +1346,70 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
                                             }
 
                                             var banner = document.getElementById('corridor-banner');
-                                            
-                                            // Signal 1 Detection
-                                            var d1 = haversine(ambLat, ambLon, signal1.getLatLng().lat, signal1.getLatLng().lng);
-                                            if (d1 < 300 && d1 > 30) {
-                                                if(banner) {
-                                                    banner.style.display = 'block';
-                                                    banner.innerText = "🚑 Signal 1: Priority Active";
-                                                }
-                                            } else if (d1 <= 30) {
-                                                if(banner && banner.innerText.includes("Signal 1")) banner.style.display = 'none';
+                                            if (!banner) return;
+
+                                            // Determine current position on route
+                                            var currentIdx = 0;
+                                            var minDist = Infinity;
+                                            for(var i=0; i<routeCoordinates.length; i++) {
+                                                var d = haversine(ambLat, ambLon, routeCoordinates[i].lat, routeCoordinates[i].lng);
+                                                if(d < minDist) { minDist = d; currentIdx = i; }
                                             }
 
-                                            // Signal 2 Detection
-                                            var d2 = haversine(ambLat, ambLon, signal2.getLatLng().lat, signal2.getLatLng().lng);
-                                            var s2Light = document.getElementById('s2-light');
-                                            var s2Status = document.getElementById('s2-status');
+                                            var activeText = "";
+                                            var activeBg = "";
 
-                                            if (d2 < 500 && signal2State === 'RED') {
-                                                signal2State = 'YELLOW';
-                                                if(banner) {
-                                                    banner.style.display = 'block';
-                                                    banner.innerText = "🚑 Signal 2: Approaching Zone";
+                                            // --- SIGNAL 1 LOGIC ---
+                                            if (currentIdx < window.signal1Index) {
+                                                var d1 = haversine(ambLat, ambLon, signal1.getLatLng().lat, signal1.getLatLng().lng);
+                                                if (d1 < 300) {
+                                                    activeText = "🚑 Signal 1: Priority Active";
+                                                    activeBg = "rgba(46, 204, 113, 0.9)";
                                                 }
-                                                if(s2Light) s2Light.style.background = '#f1c40f';
-                                                if(s2Status) s2Status.innerText = 'Signal 2: Transitioning...';
-                                                
-                                                setTimeout(function() {
-                                                    signal2State = 'GREEN';
-                                                    if(s2Light) {
-                                                        s2Light.style.background = '#2ecc71';
-                                                        s2Light.style.boxShadow = '0 0 12px rgba(46,204,113,0.9)';
+                                            } 
+                                            // --- SIGNAL 2 LOGIC ---
+                                            else if (currentIdx < window.signal2Index) {
+                                                var d2 = haversine(ambLat, ambLon, signal2.getLatLng().lat, signal2.getLatLng().lng);
+                                                var s2Light = document.getElementById('s2-light');
+                                                var s2Status = document.getElementById('s2-status');
+
+                                                if (d2 < 500) {
+                                                    if (signal2State === 'RED') {
+                                                        signal2State = 'YELLOW';
+                                                        if(s2Light) s2Light.style.background = '#f1c40f';
+                                                        if(s2Status) s2Status.innerText = 'Signal 2: Transitioning...';
+                                                        
+                                                        setTimeout(function() {
+                                                            if (signal2State === 'YELLOW') {
+                                                                signal2State = 'GREEN';
+                                                                if(s2Light) {
+                                                                    s2Light.style.background = '#2ecc71';
+                                                                    s2Light.style.boxShadow = '0 0 12px rgba(46,204,113,0.9)';
+                                                                }
+                                                                if(s2Status) {
+                                                                    s2Status.innerText = 'Signal 2: CLEARED';
+                                                                    s2Status.style.borderColor = '#2ecc71';
+                                                                }
+                                                            }
+                                                        }, 2500);
                                                     }
-                                                    if(s2Status) {
-                                                        s2Status.innerText = 'Signal 2: CLEARED';
-                                                        s2Status.style.borderColor = '#2ecc71';
+
+                                                    if (signal2State === 'YELLOW') {
+                                                        activeText = "🚑 Signal 2: Approaching Zone";
+                                                        activeBg = "rgba(241, 196, 15, 0.9)";
+                                                    } else if (signal2State === 'GREEN') {
+                                                        activeText = "🚑 Signal 2: Priority Active";
+                                                        activeBg = "rgba(46, 204, 113, 0.9)";
                                                     }
-                                                    if(banner) banner.innerText = "🚑 Signal 2: Priority Active";
-                                                }, 2500);
+                                                }
                                             }
-                                            
-                                            if (d2 < 40 && signal2State === 'GREEN') {
-                                                if(banner && banner.innerText.includes("Signal 2")) banner.style.display = 'none';
+
+                                            if (activeText) {
+                                                banner.style.display = 'block';
+                                                banner.innerText = activeText;
+                                                banner.style.background = activeBg;
+                                            } else {
+                                                banner.style.display = 'none';
                                             }
                                         } else {
                                             if (signal1) { map.removeLayer(signal1); signal1 = null; }
@@ -1394,6 +1417,8 @@ fun LiveStatusScreen(navController: NavController, activity: MainActivity, emerg
                                             var banner = document.getElementById('corridor-banner');
                                             if(banner) banner.style.display = 'none';
                                             signal2State = 'RED';
+                                            window.signal1Index = -1;
+                                            window.signal2Index = -1;
                                         }
 
                                         // Update Patient

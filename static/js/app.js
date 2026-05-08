@@ -30,6 +30,8 @@ let movementInterval = null;
 let signal1 = null;
 let signal2 = null;
 let signal2State = 'RED';
+let signal1Index = -1;
+let signal2Index = -1;
 
 // Fixed test location - M.S. Ramaiah Hospital Bus Stop, Bangalore
 let currentLocation = { lat: 13.0299, lon: 77.5659 };
@@ -471,6 +473,12 @@ console.log("📍 Patient location:", patientLocation);
 
     }).addTo(map);
 
+    // ADDED: Handle routing errors
+    routingControl.on('routingerror', function(e) {
+        console.warn("⚠️ Routing failed (OSRM down?):", e.error);
+        // FALLBACK: Move in straight line if routing fails
+        simulateDirectMovement(patientLocation, 'patient');
+    });
 
     routingControl.on('routesfound', function(e) {
 
@@ -489,6 +497,33 @@ console.log("📍 Patient location:", patientLocation);
         startAmbulanceMovement('patient');
     });
 
+}
+
+// ADDED: Fallback function for movement when OSRM routing fails
+function simulateDirectMovement(targetLocation, targetType) {
+    console.log(`🚀 Falling back to direct movement simulation for ${targetType}...`);
+    
+    // Create a simple straight-line path (10 points)
+    const steps = 20;
+    const path = [];
+    const startLat = currentLocation.lat;
+    const startLon = currentLocation.lon;
+    const endLat = targetLocation.lat || targetLocation.latitude;
+    const endLon = targetLocation.lon || targetLocation.longitude;
+    
+    for (let i = 0; i <= steps; i++) {
+        const lat = startLat + (endLat - startLat) * (i / steps);
+        const lon = startLon + (endLon - startLon) * (i / steps);
+        path.push({ lat: lat, lng: lon });
+    }
+    
+    routeCoordinates = path;
+    movementIndex = 0;
+    
+    document.getElementById('mission-distance').textContent = 
+        `Simulation Mode (Direct Path) - Moving to ${targetType}...`;
+        
+    startAmbulanceMovement(targetType);
 }
 
 function startAmbulanceMovement(targetType){
@@ -522,8 +557,8 @@ function startAmbulanceMovement(targetType){
 
         sendLocationToServer(currentLocation);
 
-        // TRAFFIC SIGNAL SIMULATION LOGIC
-        if (targetType === 'hospital' && hospitalMarker) {
+        // TRAFFIC SIGNAL SIMULATION LOGIC - Enabled for BOTH patient and hospital
+        if (targetType === 'patient' || (targetType === 'hospital' && hospitalMarker)) {
             simulateTrafficSignals(point.lat, point.lng);
         }
 
@@ -851,6 +886,12 @@ function calculateRouteToHospital(hospitalLocation) {
         }
     }).addTo(map);
     
+    // ADDED: Handle routing errors
+    routingControl.on('routingerror', function(e) {
+        console.warn("⚠️ Hospital routing failed:", e.error);
+        simulateDirectMovement(hospitalLocation, 'hospital');
+    });
+
     routingControl.on('routesfound', function(e) {
         const routes = e.routes;
         const route = routes[0];
@@ -906,19 +947,15 @@ function arrivedAtHospital() {
 }
 
 function simulateTrafficSignals(ambLat, ambLon) {
-    if (!currentMission || !hospitalMarker || !routeCoordinates || routeCoordinates.length === 0) return;
+    if (!currentMission || !routeCoordinates || routeCoordinates.length === 0) return;
 
     if (!signal1 || !signal2) {
-        console.log("🚦 Placing Traffic Signals on actual road route...");
-        
-        // Pick points directly from the route polyline (30% and 70% along the path)
-        const idx1 = Math.floor(routeCoordinates.length * 0.3);
-        const idx2 = Math.floor(routeCoordinates.length * 0.7);
-        
-        const pos1 = routeCoordinates[idx1];
-        const pos2 = routeCoordinates[idx2];
+        console.log("🚦 Initializing Traffic Signals on actual road route...");
+        signal1Index = Math.floor(routeCoordinates.length * 0.3);
+        signal2Index = Math.floor(routeCoordinates.length * 0.7);
+        const pos1 = routeCoordinates[signal1Index];
+        const pos2 = routeCoordinates[signal2Index];
 
-        // Signal 1: Always Green Priority
         signal1 = L.marker([pos1.lat, pos1.lng], {
             icon: L.divIcon({
                 html: `<div style="background:#2ecc71; width:22px; height:22px; border-radius:50%; border:3px solid #333; box-shadow:0 0 10px rgba(46,204,113,0.8);"></div>
@@ -926,11 +963,9 @@ function simulateTrafficSignals(ambLat, ambLon) {
                 className: 'custom-signal-icon',
                 iconSize: [120, 50],
                 iconAnchor: [60, 25]
-            }),
-            zIndexOffset: 2000
+            }), zIndexOffset: 2000
         }).addTo(map);
 
-        // Signal 2: Dynamic Logic
         signal2 = L.marker([pos2.lat, pos2.lng], {
             icon: L.divIcon({
                 html: `<div id="s2-light" style="background:#e74c3c; width:22px; height:22px; border-radius:50%; border:3px solid #333; box-shadow:0 0 10px rgba(231,76,60,0.8);"></div>
@@ -938,58 +973,67 @@ function simulateTrafficSignals(ambLat, ambLon) {
                 className: 'custom-signal-icon',
                 iconSize: [120, 50],
                 iconAnchor: [60, 25]
-            }),
-            zIndexOffset: 2000
+            }), zIndexOffset: 2000
         }).addTo(map);
     }
 
     const banner = document.getElementById('corridor-banner');
+    if (!banner) return;
     
-    // Logic for Signal 1 Popup
-    const dist1 = calculateDistance(ambLat, ambLon, signal1.getLatLng().lat, signal1.getLatLng().lng);
-    if (dist1 < 300 && dist1 > 30) {
-        if(banner) {
-            banner.style.display = 'block';
-            banner.innerText = "🚑 Signal 1: Emergency Corridor Activated";
+    let activeText = "";
+    let activeBg = "";
+
+    // Zone 1 Logic (Approaching Signal 1)
+    if (movementIndex < signal1Index) {
+        const dist1 = calculateDistance(ambLat, ambLon, signal1.getLatLng().lat, signal1.getLatLng().lng);
+        if (dist1 < 300) {
+            activeText = "🚑 Signal 1: Emergency Corridor Activated";
+            activeBg = "rgba(46, 204, 113, 0.9)";
         }
-    } else if (dist1 <= 30) {
-        // Just crossed signal 1
-        if(banner && banner.innerText.includes("Signal 1")) banner.style.display = 'none';
+    } 
+    // Zone 2 Logic (Passed Signal 1, approaching Signal 2)
+    else if (movementIndex < signal2Index) {
+        const dist2 = calculateDistance(ambLat, ambLon, signal2.getLatLng().lat, signal2.getLatLng().lng);
+        const s2Light = document.getElementById('s2-light');
+        const s2Status = document.getElementById('s2-status');
+
+        if (dist2 < 500) {
+            if (signal2State === 'RED') {
+                signal2State = 'YELLOW';
+                if(s2Light) s2Light.style.background = '#f1c40f';
+                if(s2Status) s2Status.innerText = 'Signal 2: Transitioning...';
+                setTimeout(() => {
+                    if (signal2State === 'YELLOW') {
+                        signal2State = 'GREEN';
+                        if(s2Light) {
+                            s2Light.style.background = '#2ecc71';
+                            s2Light.style.boxShadow = '0 0 15px rgba(46,204,113,0.9)';
+                        }
+                        if(s2Status) {
+                            s2Status.innerText = 'Signal 2: CLEARED';
+                            s2Status.style.borderColor = '#2ecc71';
+                        }
+                    }
+                }, 2500);
+            }
+
+            if (signal2State === 'YELLOW') {
+                activeText = "🚑 Signal 2: Approaching Priority Zone";
+                activeBg = "rgba(241, 196, 15, 0.9)";
+            } else if (signal2State === 'GREEN') {
+                activeText = "🚑 Signal 2: Emergency Corridor Activated";
+                activeBg = "rgba(46, 204, 113, 0.9)";
+            }
+        }
     }
 
-    // Logic for Signal 2 (Distance Based State Machine)
-    const s2LatLng = signal2.getLatLng();
-    const dist2 = calculateDistance(ambLat, ambLon, s2LatLng.lat, s2LatLng.lng);
-    const s2Light = document.getElementById('s2-light');
-    const s2Status = document.getElementById('s2-status');
-
-    if (dist2 < 500 && signal2State === 'RED') {
-        console.log("🚦 Signal 2 Priority Triggered! Distance:", dist2);
-        signal2State = 'YELLOW';
-        if(banner) {
-            banner.style.display = 'block';
-            banner.innerText = "🚑 Signal 2: Approaching Priority Zone";
-        }
-        if(s2Light) s2Light.style.background = '#f1c40f';
-        if(s2Status) s2Status.innerText = 'Signal 2: Transitioning...';
-        
-        setTimeout(() => {
-            signal2State = 'GREEN';
-            if(s2Light) {
-                s2Light.style.background = '#2ecc71';
-                s2Light.style.boxShadow = '0 0 15px rgba(46,204,113,0.9)';
-            }
-            if(s2Status) {
-                s2Status.innerText = 'Signal 2: CLEARED';
-                s2Status.style.borderColor = '#2ecc71';
-            }
-            if(banner) banner.innerText = "🚑 Signal 2: Emergency Corridor Activated";
-        }, 2500);
-    } 
-    
-    // Hide banner after crossing Signal 2
-    if (dist2 < 40 && signal2State === 'GREEN') {
-        if(banner && banner.innerText.includes("Signal 2")) banner.style.display = 'none';
+    // Apply visibility
+    if (activeText) {
+        banner.style.display = 'block';
+        banner.innerText = activeText;
+        banner.style.background = activeBg;
+    } else {
+        banner.style.display = 'none';
     }
 }
 
