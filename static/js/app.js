@@ -427,7 +427,12 @@ function startMission(emergency) {
     document.getElementById('your-status').textContent = 'On Mission - Pickup';
 
     // ⭐ Set patient marker
-    const pLoc = emergency.patient_location || { lat: emergency.lat, lon: emergency.lon };
+    let pLoc = emergency.patient_location || { lat: emergency.lat, lon: emergency.lon };
+    
+    // Normalize coordinates (ensure lat/lon keys exist)
+    if (!pLoc.lat && pLoc.latitude) pLoc.lat = pLoc.latitude;
+    if (!pLoc.lon && pLoc.longitude) pLoc.lon = pLoc.longitude;
+    
     setPatientLocation(pLoc, emergency.patient_name);
 
     // Center map to see both driver and patient
@@ -437,16 +442,27 @@ function startMission(emergency) {
     }
 
     // ⭐ ROUTE CALCULATION - Waypoints must be valid numbers
-    if (currentLocation.lat && currentLocation.lon && pLoc.lat && pLoc.lon) {
+    if (currentLocation.lat && (currentLocation.lon || currentLocation.lng) && pLoc.lat && pLoc.lon) {
         calculateRouteToPatient(pLoc);
     } else {
         console.error("❌ Cannot calculate route: Missing coordinates", currentLocation, pLoc);
+        // FORCE FALLBACK if we have enough to simulate but routing check failed
+        if ((currentLocation.lat && (currentLocation.lon || currentLocation.lng)) && (pLoc.lat || pLoc.latitude) && (pLoc.lon || pLoc.longitude)) {
+             simulateDirectMovement(pLoc, 'patient');
+        }
     }
 }
 
 function calculateRouteToPatient(patientLocation) {
-console.log("🚑 Driver location:", currentLocation);
-console.log("📍 Patient location:", patientLocation);
+    // Normalize input
+    const pLat = patientLocation.lat || patientLocation.latitude;
+    const pLon = patientLocation.lon || patientLocation.longitude;
+    const cLat = currentLocation.lat;
+    const cLon = currentLocation.lon || currentLocation.lon || currentLocation.lng;
+
+    console.log("🚑 Driver location:", currentLocation);
+    console.log("📍 Patient location:", {lat: pLat, lon: pLon});
+
     if (routingControl) {
         map.removeControl(routingControl);
         routingControl = null;
@@ -456,8 +472,8 @@ console.log("📍 Patient location:", patientLocation);
 
     routingControl = L.Routing.control({
         waypoints: [
-            L.latLng(currentLocation.lat, currentLocation.lon),
-            L.latLng(patientLocation.lat, patientLocation.lon)
+            L.latLng(cLat, cLon),
+            L.latLng(pLat, pLon)
         ],
         routeWhileDragging: false,
         show: false,
