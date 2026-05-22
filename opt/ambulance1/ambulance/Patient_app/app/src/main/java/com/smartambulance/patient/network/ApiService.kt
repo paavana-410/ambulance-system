@@ -174,8 +174,19 @@ object RetrofitClient {
         get() {
             if (retrofit == null || lastIp != CURRENT_IP) {
                 lastIp = CURRENT_IP
+                val baseUrl = when {
+                    CURRENT_IP.startsWith("http://") || CURRENT_IP.startsWith("https://") -> {
+                        if (CURRENT_IP.endsWith("/")) CURRENT_IP else "$CURRENT_IP/"
+                    }
+                    CURRENT_IP.contains("127.0.0.1") || CURRENT_IP.contains("10.0.2.2") || CURRENT_IP.contains("192.168.") || CURRENT_IP.contains("localhost") || CURRENT_IP.contains(":") -> {
+                        "http://$CURRENT_IP/"
+                    }
+                    else -> {
+                        "https://$CURRENT_IP/"
+                    }
+                }
                 retrofit = Retrofit.Builder()
-                    .baseUrl("https://$CURRENT_IP")
+                    .baseUrl(baseUrl)
                     .addConverterFactory(GsonConverterFactory.create())
                     .build()
             }
